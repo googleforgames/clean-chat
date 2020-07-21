@@ -1,0 +1,11 @@
+{
+  "comment": { "text": "what kind of idiot name is foo?" },
+  "languages": ["en"],
+  "requestedAttributes": {
+    "TOXICITY": {},
+    "SEVERE_TOXICITY": {},
+    "IDENTITY_ATTACK": {},
+    "INSULT": {},
+    "SEXUALLY_EXPLICIT": {}
+  }
+}
