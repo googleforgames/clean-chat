@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option go_package = "antidote";
+
+package antidote;
+import "google/protobuf/timestamp.proto";
+
+// Antidote message stubs:
+message ToxicityRequest {
+  google.protobuf.Timestamp message_timestamp = 1;
+  string player_uuid = 2;
+  string message = 3;
+}
+
+// We return the request with the response for easier asynchronous operation:
+message ToxicityResponse {
+  string evaluation_uuid = 1;
+  float toxicity = 2;
+  google.protobuf.Timestamp evaluation_timestamp = 3;
+  ToxicityRequest traceback = 4;
+}
+
+service Toxicity {
+  rpc DetermineToxicity (ToxicityRequest) returns (ToxicityResponse) {}
+}
