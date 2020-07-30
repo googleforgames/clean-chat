@@ -67,7 +67,7 @@ func handleMessages(apiKey string) {
 		fmt.Printf("Got toxicity score of %v for [%s].\n", tox.TotalScore, msg.Message)
 
 		for client := range clients {
-			if tox.TotalScore < 0 {
+			if tox.TotalScore > 0.8 {
 				toxLine := fmt.Sprintf("@%s, Warning: Impolite conversation will result in user suspension.", msg.Username)
 				toxMessage := Message{"toxicity@toxicity.googleapis.com", "Toxicity Bot", toxLine}
 				err := client.WriteJSON(toxMessage)

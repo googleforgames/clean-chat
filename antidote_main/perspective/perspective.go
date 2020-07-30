@@ -30,20 +30,20 @@ type Request struct {
 // Response is the JSON response from the Perspective API.
 type Response struct {
 	AttributeScores struct {
-		SEVERETOXICITY struct {
-			SpanScores []struct {
-				Begin int `json:"begin"`
-				End   int `json:"end"`
-				Score struct {
-					Value float64 `json:"value"`
-					Type  string  `json:"type"`
-				} `json:"score"`
-			} `json:"spanScores"`
-			SummaryScore struct {
-				Value float64 `json:"value"`
-				Type  string  `json:"type"`
-			} `json:"summaryScore"`
-		} `json:"SEVERE_TOXICITY"`
+		// SEVERETOXICITY struct {
+		// 	SpanScores []struct {
+		// 		Begin int `json:"begin"`
+		// 		End   int `json:"end"`
+		// 		Score struct {
+		// 			Value float64 `json:"value"`
+		// 			Type  string  `json:"type"`
+		// 		} `json:"score"`
+		// 	} `json:"spanScores"`
+		// 	SummaryScore struct {
+		// 		Value float64 `json:"value"`
+		// 		Type  string  `json:"type"`
+		// 	} `json:"summaryScore"`
+		// } `json:"SEVERE_TOXICITY"`
 		INSULT struct {
 			SpanScores []struct {
 				Begin int `json:"begin"`
@@ -121,7 +121,7 @@ type ToxicityRating struct {
 func NewToxicityRating(ToxicityScore, IdentityAttackScore, InsultScore, SexuallyExplicitScore float64) ToxicityRating {
 	// FIXME: Sort the import variables.
 
-	TotalScore := (ToxicityScore * IdentityAttackScore * InsultScore * SexuallyExplicitScore) / ((ToxicityScore * IdentityAttackScore * InsultScore * SexuallyExplicitScore) + (1 - ToxicityScore*1 - IdentityAttackScore*1 - InsultScore*1 - SexuallyExplicitScore))
+	TotalScore := (ToxicityScore * IdentityAttackScore * InsultScore * SexuallyExplicitScore) / ((ToxicityScore * IdentityAttackScore * InsultScore * SexuallyExplicitScore) + ((1 - ToxicityScore) * (1 - IdentityAttackScore) * (1 - InsultScore) * (1 - SexuallyExplicitScore)))
 	t := ToxicityRating{IdentityAttackScore, InsultScore, SexuallyExplicitScore, ToxicityScore, TotalScore}
 	return t
 }
