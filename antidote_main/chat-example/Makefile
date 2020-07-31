@@ -2,7 +2,7 @@
 
 # Constants:
 BINARY=antidote-chat
-REPO=gcr.io/gaming-insights-playground/antidote-chat:v1
+REPO=gcr.io/antidote-playground/antidote-chat:v1
 
 # Targets:
 all : binary container
