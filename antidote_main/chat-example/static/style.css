@@ -1,0 +1,32 @@
+body {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+nav {
+  background-color: DarkSeaGreen;
+  padding-left: 2vh;
+  font-family: "Recursive", sans-serif;
+}
+
+.page-footer {
+  background-color: DarkSeaGreen;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+.row {
+  padding: 2vh;
+  margin: 2vh;
+}
+
+#chat-messages {
+  padding: 2vh;
+  min-height: 10vh;
+  height: 60vh;
+  width: 100%;
+  overflow-y: scroll;
+}

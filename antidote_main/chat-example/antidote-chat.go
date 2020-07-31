@@ -67,7 +67,7 @@ func handleMessages(apiKey string) {
 		fmt.Printf("Got toxicity score of %v for [%s].\n", tox.TotalScore, msg.Message)
 
 		for client := range clients {
-			if tox.TotalScore > 0.8 {
+			if tox.TotalScore > 0.7 {
 				toxLine := fmt.Sprintf("@%s, Warning: Impolite conversation will result in user suspension.", msg.Username)
 				toxMessage := Message{"toxicity@toxicity.googleapis.com", "Toxicity Bot", toxLine}
 				err := client.WriteJSON(toxMessage)
@@ -98,8 +98,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create a simple file server
-	fs := http.FileServer(http.Dir("../public"))
+	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/", fs)
 
 	// Configure websocket route
@@ -108,8 +107,7 @@ func main() {
 	// Start listening for incoming chat messages
 	go handleMessages(APIKey)
 
-	// Start the server on localhost port 8000 and log any errors
-	log.Println("http server started on :8000")
+	log.Println("Antidote Chat Server started on :8000")
 	err := http.ListenAndServe(":8000", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
