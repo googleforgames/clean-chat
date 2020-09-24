@@ -5,4 +5,5 @@ Toxic behavior, content and players exist in all games, therefore it’s very im
 
 ## Contents: 
 
+- **antidote_main:** Production code for Antidote 
 - **toxicity_ml:** Core Antidote ML Models for toxic speech and griefing; python based
