@@ -1,3 +1,5 @@
+# coding=utf-8
+# Copyright 2020 Google LLC
 ## Perform BERT text pre-rocessing
 
 import tensorflow as tf
