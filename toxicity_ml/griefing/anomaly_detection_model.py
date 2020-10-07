@@ -1,48 +1,44 @@
-
 # coding=utf-8
 # Copyright 2020 Google LLC
 
 '''
+USAGE:
+anomaly_detection_model.py --training_data './data/game_event_logs.csv' --epochs 10 --batch_size 10 --validation_split 0.05 --model_threshold 0.275 --model_filepath ./models/
+
 TODO:
     - Refactor for tfx pipeline
     - Add parameterization / args
     - Add feature engineering to enhance model
     - Add new model fit stats
-
 '''
 
-import os,re
+
+import os,sys
+import argparse
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-import seaborn as sns
-sns.set(color_codes=True)
-import matplotlib.pyplot as plt
 
 from numpy.random import seed
 import tensorflow as tf
 tf.get_logger().setLevel('ERROR')
 
-from keras.layers import Input, Dropout, Dense, LSTM, TimeDistributed, RepeatVector
+from keras.layers import Input, Dense, LSTM, TimeDistributed, RepeatVector
 from keras.models import Model
 from keras import regularizers
 
 seed(54321)
 tf.random.set_seed(54321)
 
-def load_data(data_dir='data/'):
-    rawdata = pd.DataFrame()
-    
-    #header_names = ['datetimestamp','gameid','x_cord','y_cord','points','direction','speed']
-    
-    for filename in os.listdir(data_dir):
-        if re.search('game_event_logs[0-9]*\.csv',filename.lower()):
-            dataset = pd.read_csv(os.path.join(data_dir, filename), sep=',')#, names=header_names)
-            rawdata = rawdata.append(dataset)
-    
-    print(rawdata.head())
-    return rawdata
+def load_training_data(training_data):
+    try:
+        rawdata = pd.read_csv(training_data, sep=',')#, names=header_names)
+        print(rawdata.head())
+        return rawdata
+    except Exception as e:
+        print('[ EXCEPTION ] {}'.format(e))
+        sys.exit()
 
 def split_train_test(df):
     train_df, test_df = train_test_split(df, test_size=0.25, random_state=54321, shuffle=True)
@@ -81,7 +77,7 @@ def execute_model_training(model_obj, epochs=10, batch_size=10, validation_split
     history = model_obj.fit(X_train, X_train, epochs=epochs, batch_size=batch_size,validation_split=validation_split).history
     return model_obj
 
-def assess_model(model, anomaly_threshold=0.275):
+def assess_model(model, model_threshold=0.275):
     X_pred = model.predict(X_train)
     X_pred = X_pred.reshape(X_pred.shape[0], X_pred.shape[2])
     X_pred = pd.DataFrame(X_pred, columns=train_df.columns)
@@ -100,16 +96,37 @@ def assess_model(model, anomaly_threshold=0.275):
     scored['Loss_mae'] = np.mean(np.abs(X_pred-Xtest), axis = 1)
     print('[ INFO ] Test DF Loss MAE: {}'.format(scored['Loss_mae']))
     
-    scored['Threshold'] = anomaly_threshold
+    scored['Threshold'] = model_threshold
     scored['Anomaly'] = scored['Loss_mae'] > scored['Threshold']
     print(scored.head())
     
     return scored
 
 if __name__ == "__main__":
+    '''
+    # ONLY used for TESTING - Example Arguments
+    args =  {
+                "training_data":    "./data/game_event_logs.csv",
+                "epochs":           10,
+                "batch_size":       10,
+                "validation_split": 0.05,
+                "model_threshold":  0.275,
+                "model_filepath":   './models/'
+            }
+    '''
+    
+    # Arguments
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--training_data",      required=True,                      type=str,   help="Training data including filename and filepath")
+    ap.add_argument("--epochs",             required=True,  default=10,         type=int,   help="Model epochs")
+    ap.add_argument("--batch_size",         required=True,  default=10,         type=int,   help="Model batch size")
+    ap.add_argument("--validation_split",   required=True,  default=0.05,       type=float, help="Model validation percentage (ie. 0.05 is 5%")
+    ap.add_argument("--model_threshold",    required=True,  default=0.275,      type=float, help="Model threshold for anomalies")
+    ap.add_argument("--model_filepath",     required=True,  default='./models/',type=str,   help="Saved model output directory")
+    args = vars(ap.parse_args())
     
     # Load Data
-    rawdata = load_data(data_dir='data/')
+    rawdata = load_training_data(args['training_data'])
     
     # Split into Train and Test DFs
     train_df, test_df = split_train_test(rawdata)
@@ -122,12 +139,12 @@ if __name__ == "__main__":
     model_obj = autoencoder_model(X_train)
     
     # Execute Model Training
-    model = execute_model_training(model_obj, epochs=1, batch_size=10, validation_split=0.05)
+    model = execute_model_training(model_obj, epochs=args['epochs'], batch_size=args['batch_size'], validation_split=args['validation_split'])
     
     # Model Assessment
-    scored = assess_model(model, anomaly_threshold=0.275)
+    scored = assess_model(model, model_threshold=args['model_threshold'])
     # Save model
-    model.save('./models/', save_format='tf')
+    model.save(args['model_filepath'], save_format='tf')
 
 
 #ZEND
