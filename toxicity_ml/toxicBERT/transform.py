@@ -75,11 +75,11 @@ def preprocessing_fn(inputs):
         )
 
     input_word_ids, input_mask, input_type_ids = \
-        preprocess_bert_input(tf.squeeze(inputs['text'], axis=1))
+        preprocess_bert_input(tf.squeeze(inputs['comment_text'], axis=1))
 
     return {
         'input_word_ids': input_word_ids,
         'input_mask': input_mask,
         'input_type_ids': input_type_ids,
-        'label': inputs['label']
+        'label': inputs['target']
     }
