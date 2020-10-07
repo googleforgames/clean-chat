@@ -1,2 +1,2 @@
--jigsaw.csv: Sample of 10,000 comments for testing the model flow 
--jigsaw_full.csv: Full Jigsaw NYT comments corpus
+- jigsaw.csv: Sample of 10,000 comments for testing the model flow 
+- jigsaw_full.csv: Full Jigsaw NYT comments corpus
