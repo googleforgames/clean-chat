@@ -58,6 +58,7 @@ check_command() {
 }
 
 CROSTINI=false
+AUDIO_OK=true
 check_audio() {
     EXTRALIB="Something"
     PKG="$(red '-- MISSING --')"
@@ -75,6 +76,7 @@ check_audio() {
                     PKG=$(green $SYSPKG)
                 else
                     echo "You should install python3-pyaudio, as it is a system package on Debian."
+                    AUDIO_OK=false
                 fi
 
                 # Best guess ChromeOS's Crostini here:
@@ -87,9 +89,12 @@ check_audio() {
             elif [[ $ID == "centos" || $ID == "rhel" ]]; then
 
                 EXTRALIB="portaudio-devel"
-                PKG=$(rpm -qa | grep portaudio-devel)
-                if [ $? -ne 0 ]; then
+                SYSPKG=$(rpm -qa | grep portaudio-devel)
+                if [ $? -eq 0 ]; then
+                    PKG=$(green $SYSPKG)
+                else
                     echo "You should install portaudio-devel (from EPEL), as PyAudio requires it."
+                    AUDIO_OK=false
                 fi
             fi
         else
@@ -100,9 +105,12 @@ check_audio() {
     elif [[ "$OSTYPE" == "darwin"* ]]; then
 
         EXTRALIB="portaudio"
-        PKG=$(brew list --versions --formula portaudio)
-        if [ $? -ne 0 ]; then
+        SYSPKG=$(brew list --versions --formula portaudio)
+        if [ $? -eq 0 ]; then
+            PKG=$(green "$SYSPKG")
+        else
             echo "You should install portaudio, as PyAudio requires it."
+            AUDIO_OK=false
         fi
 
     else
@@ -199,6 +207,11 @@ echo "==========================================================================
 check_pip PyAudio
 check_pip termcolor
 check_audio
+
+if [ $AUDIO_OK = false ]; then
+    error "Please install the system-specific libraries before continuing."
+    exit 1
+fi
 
 if [ $CROSTINI = true ]; then
     echo ""
