@@ -46,6 +46,7 @@ check_pip() {
 
     if [ $? = 1 ]; then
         PIP_OK=false
+        MASTER_OK=false
         PIPLIB="-- MISSING --"
     fi
 
@@ -121,8 +122,10 @@ echo "==========================================================================
 
 check_pip PyAudio
 check_pip termcolor
-echo "done here"
-exit 0
+
+if [ $PIP_OK = false ]; then
+    error "Please install the missing Python libraries before continuing."
+fi
 
 # =============================================================================
 # Sanity Checking: gcloud stuff
@@ -157,10 +160,17 @@ fi
 
 if [ $MASTER_OK = false ]; then
     error "Errors were detected, exiting."
+    exit 1
 fi
 
-echo ""
+# =============================================================================
+# Sanity Checking: APIs
+# =============================================================================
 
+# Note: if the project variable is unset, this will not work. Proceed *only* if
+# if the rest of the gcloud section is valid.
+
+echo ""
 # List of requisite APIs:
 REQUIRED_APIS="
 	speech
