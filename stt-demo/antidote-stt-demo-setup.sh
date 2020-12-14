@@ -17,6 +17,24 @@ echo ""
 # Libraries and Functions
 # =============================================================================
 
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+REG="\033[0m"
+
+red() {
+    echo -e ${RED}${1}${REG}
+}
+
+yellow() {
+    echo -e ${YELLOW}${1}${REG}
+}
+
+green() {
+    echo -e ${GREEN}${1}${REG}
+}
+
+# Any errors encountered which require user intervention?
 MASTER_OK=true
 
 # Prefixes output and writes to STDERR:
@@ -33,10 +51,64 @@ check_command() {
     if [ $? = 1 ]; then
         COMMANDS_OK=false
         MASTER_OK=false
-        PATH_TO_CMD="-- MISSING --"
+        PATH_TO_CMD="-- $(red MISSING) --"
     fi
 
-	printf " => %-20s %55s\n" "\"$TESTCOMMAND\"..." "[ $PATH_TO_CMD ]"
+	printf " => %-20s %66s\n" "\"$TESTCOMMAND\"..." "[ $(green $PATH_TO_CMD) ]"
+}
+
+CROSTINI=false
+check_audio() {
+    EXTRALIB="Something"
+    PKG="-- MISSING --"
+
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        
+        # Linux
+        if [ -f /etc/os-release ]; then
+            source /etc/os-release
+            if [[ $ID == "debian" ]]; then
+
+                EXTRALIB="python3-pyadio"
+                PKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio)
+                if [ $? -ne 0 ]; then
+                    echo "You should install python3-pyaudio, as it is a system package on Debian."
+                fi
+
+                # Best guess ChromeOS's Crostini here:
+                hostnamectl status | grep Virtualization | grep -q lxc && lscpu | grep Hypervisor | grep -q KVM
+                if [ $? -eq 0 ]; then
+                    CROSTINI=true
+                    printf " => %-35s %54s\n" "\"Crostini Microphone Access\"..." "[ $(yellow '¯\_(ツ)_/¯') ]"
+                fi
+
+            elif [[ $ID == "centos" || $ID == "rhel" ]]; then
+
+                EXTRALIB="portaudio-devel"
+                PKG=$(rpm -qa | grep portaudio-devel)
+                if [ $? -ne 0 ]; then
+                    echo "You should install portaudio-devel (from EPEL), as PyAudio requires it."
+                fi
+            fi
+        else
+            error "Your Linux distribution is missing /etc/os-release, sorry!"
+            exit 1
+        fi
+
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+
+        EXTRALIB="portaudio"
+        PKG=$(brew list --versions --formula portaudio)
+        if [ $? -ne 0 ]; then
+            echo "You should install portaudio, as PyAudio requires it."
+        fi
+
+    else
+        error "You are using an unsupported operating system, sorry!"
+        exit 1
+    fi
+
+    printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $(green $PKG) ]"
 }
 
 PIP_OK=true
@@ -50,35 +122,35 @@ check_pip() {
         PIPLIB="-- MISSING --"
     fi
 
-	printf " => %-20s %55s\n" "\"$TESTLIB\"..." "[ $PIPLIB ]"
+	printf " => %-20s %66s\n" "\"$TESTLIB\"..." "[ $(green $PIPLIB) ]"
 }
 
 # Checks to see if gcloud configs are (unset):
 GCLOUD_CONFIG_OK=true
 check_unset() {
-	PARAM=$1
+	PARAM=$(green $1)
 	VAR=$2
     
     if [[ $PARAM == *"(unset)"* ]]; then
         GCLOUD_CONFIG_OK=false
         MASTER_OK=false
-        PARAM="-- UNSET --"
+        PARAM="$(red '-- UNSET --')"
 	fi
 
-    printf " => %-20s %55s\n" "\"$VAR\"..." "[ $PARAM ]"
+    printf " => %-20s %66s\n" "\"$VAR\"..." "[ $PARAM ]"
 }
 
 CREDS_OK=true
 check_default_creds() {
-    TOKEN="OK"
+    TOKEN=$(green OK)
 
     if [[ $GCP_AUTHTOKEN == *"ERROR"* ]]; then
         CREDS_OK=false
         MASTER_OK=false
-        TOKEN="-- MISSING --"
+        TOKEN="-- $(red MISSING) --"
     fi
 
-    printf " => %-32s %39s\n" "\"application-default credentials\"..." "[ $TOKEN ]"
+    printf " => %-32s %50s\n" "\"application-default credentials\"..." "[ $TOKEN ]"
 }
 
 # Returns just the value we're looking for OR unset:
@@ -119,12 +191,20 @@ fi
 echo ""
 echo "Checking for requisite libraries..."
 echo "================================================================================"
-
 check_pip PyAudio
 check_pip termcolor
+check_audio
+
+if [ $CROSTINI = true ]; then
+    echo ""
+    echo $(yellow "You appear to be using Crostini!")
+    echo $(yellow "Double-check that you've enabled microphone sharing in ChromeOS settings!")
+    echo ""
+fi
 
 if [ $PIP_OK = false ]; then
-    error "Please install the missing Python libraries before continuing."
+    error "Please install the missing Python libraries 
+    before continuing."
 fi
 
 # =============================================================================
@@ -190,10 +270,10 @@ ENABLED_ANY=1
 for REQUIRED_API in $REQUIRED_APIS; do
 	if [ $(grep -q $REQUIRED_API <(echo $GCP_CURRENT_APIS))$? -eq 0 ]; then
 		# It's already enabled:
-        printf " => %-20s %55s\n" "\"$REQUIRED_API\"..." "[ ON ]"
+        printf " => %-20s %66s\n" "\"$REQUIRED_API\"..." "[ $(green ON) ]"
 	else
 		# It needs to be enabled:
-        printf " => %-20s %55s\n" "\"$REQUIRED_API\"..." "[ OFF ]"
+        printf " => %-20s %66s\n" "\"$REQUIRED_API\"..." "[ $(red OFF) ]"
 		enable_api $REQUIRED_API.googleapis.com &
 		ENABLED_ANY=0
 	fi
