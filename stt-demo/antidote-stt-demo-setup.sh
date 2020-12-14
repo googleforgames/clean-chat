@@ -60,7 +60,7 @@ check_command() {
 CROSTINI=false
 check_audio() {
     EXTRALIB="Something"
-    PKG="-- MISSING --"
+    PKG="$(red '-- MISSING --')"
 
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
@@ -70,8 +70,10 @@ check_audio() {
             if [[ $ID == "debian" ]]; then
 
                 EXTRALIB="python3-pyadio"
-                PKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio 2> /dev/null)
-                if [ $? -ne 0 ]; then
+                SYSPKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio 2> /dev/null)
+                if [ $? -eq 0 ]; then
+                    PKG=$(green $SYSPKG)
+                else
                     echo "You should install python3-pyaudio, as it is a system package on Debian."
                 fi
 
@@ -108,7 +110,7 @@ check_audio() {
         exit 1
     fi
 
-    printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $(green $PKG) ]"
+    printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
 }
 
 PIP_OK=true
