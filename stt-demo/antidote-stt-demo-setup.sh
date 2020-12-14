@@ -39,6 +39,19 @@ check_command() {
 	printf " => %-20s %55s\n" "\"$TESTCOMMAND\"..." "[ $PATH_TO_CMD ]"
 }
 
+PIP_OK=true
+check_pip() {
+	TESTLIB=$1
+	PIPLIB=$(pip3 list --no-color --no-python-version-warning --format=freeze | grep $TESTLIB)
+
+    if [ $? = 1 ]; then
+        PIP_OK=false
+        PIPLIB="-- MISSING --"
+    fi
+
+	printf " => %-20s %55s\n" "\"$TESTLIB\"..." "[ $PIPLIB ]"
+}
+
 # Checks to see if gcloud configs are (unset):
 GCLOUD_CONFIG_OK=true
 check_unset() {
@@ -82,7 +95,7 @@ enable_api() {
 }
 
 # =============================================================================
-# Sanity Checking
+# Sanity Checking: Binaries
 # =============================================================================
 
 echo ""
@@ -90,12 +103,33 @@ echo "Checking for requisite binaries..."
 echo "================================================================================"
 check_command gcloud
 check_command python3
+check_command pip3
 check_command docker
 echo ""
 
+if [ $COMMANDS_OK = false ]; then
+    error "Please install the missing binaries/symlinks before continuing."
+fi
+
+# =============================================================================
+# Sanity Checking: Libraries
+# =============================================================================
+
+echo ""
+echo "Checking for requisite libraries..."
+echo "================================================================================"
+
+check_pip PyAudio
+check_pip termcolor
+echo "done here"
+exit 0
+
+# =============================================================================
+# Sanity Checking: gcloud stuff
+# =============================================================================
+
 # This executes all the gcloud commands in parallel and then assigns them to separate variables:
 # Needed for non-array capabale bashes, and for speed.
-
 echo ""
 echo "Checking multiple gcloud variables in parallel..."
 echo "================================================================================"
@@ -111,10 +145,6 @@ check_unset $GCP_REGION "compute/region"
 check_unset $GCP_ZONE "compute/zone"
 check_default_creds $GCP_AUTHTOKEN
 
-if [ $COMMANDS_OK = false ]; then
-    error "Please install the missing binaries before continuing."
-fi
-
 if [ $GCLOUD_CONFIG_OK = false ]; then
     error "Please ensure all gcloud variables are set via:
     gcloud config set <variable> <value>"
@@ -126,14 +156,10 @@ if [ $CREDS_OK = false ]; then
 fi
 
 if [ $MASTER_OK = false ]; then
-    error "Errors detected, exiting."
+    error "Errors were detected, exiting."
 fi
 
 echo ""
-
-# =============================================================================
-# Configure APIs
-# =============================================================================
 
 # List of requisite APIs:
 REQUIRED_APIS="
