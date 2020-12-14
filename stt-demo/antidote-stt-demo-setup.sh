@@ -70,7 +70,7 @@ check_audio() {
             if [[ $ID == "debian" ]]; then
 
                 EXTRALIB="python3-pyadio"
-                PKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio)
+                PKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio 2> /dev/null)
                 if [ $? -ne 0 ]; then
                     echo "You should install python3-pyaudio, as it is a system package on Debian."
                 fi
@@ -114,15 +114,17 @@ check_audio() {
 PIP_OK=true
 check_pip() {
 	TESTLIB=$1
-	PIPLIB=$(pip3 list --no-color --no-python-version-warning --format=freeze | grep $TESTLIB)
+	PIPLIB=$(pip3 freeze | grep $TESTLIB)
 
-    if [ $? = 1 ]; then
+    if [ $? = 0 ]; then
+        PIPLIB=$(green $PIPLIB)
+    else
         PIP_OK=false
         MASTER_OK=false
-        PIPLIB="-- MISSING --"
+        PIPLIB="$(red '-- MISSING --')"
     fi
 
-	printf " => %-20s %66s\n" "\"$TESTLIB\"..." "[ $(green $PIPLIB) ]"
+	printf " => %-20s %66s\n" "\"$TESTLIB\"..." "[ $PIPLIB ]"
 }
 
 # Checks to see if gcloud configs are (unset):
@@ -182,6 +184,7 @@ echo ""
 
 if [ $COMMANDS_OK = false ]; then
     error "Please install the missing binaries/symlinks before continuing."
+    exit 1
 fi
 
 # =============================================================================
