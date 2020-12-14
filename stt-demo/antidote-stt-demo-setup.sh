@@ -23,7 +23,7 @@ YELLOW="\033[0;33m"
 REG="\033[0m"
 
 red() {
-    echo -e ${RED}${1}${REG}
+    echo -e "${RED}${1}${REG}"
 }
 
 yellow() {
@@ -31,7 +31,7 @@ yellow() {
 }
 
 green() {
-    echo -e ${GREEN}${1}${REG}
+    echo -e "${GREEN}${1}${REG}"""
 }
 
 # Any errors encountered which require user intervention?
@@ -202,8 +202,8 @@ check_audio
 
 if [ $CROSTINI = true ]; then
     echo ""
-    echo $(yellow "You appear to be using Crostini!")
-    echo $(yellow "Double-check that you've enabled microphone sharing in ChromeOS settings!")
+    echo "                    $(yellow '==> You appear to be using Crostini! <==')"
+    echo "    $(yellow "Double-check that you've enabled microphone sharing in ChromeOS settings!")"
     echo ""
 fi
 
