@@ -17,6 +17,7 @@
 import re
 import sys
 import time
+import requests
 
 from google.cloud import speech
 import pyaudio
@@ -30,6 +31,8 @@ CHUNK_SIZE = int(SAMPLE_RATE / 10)  # 100ms
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 YELLOW = "\033[0;33m"
+
+URL = "http://localhost:8501/v1/models/bert_model:predict"
 
 
 def get_current_time():
@@ -204,7 +207,21 @@ def listen_print_loop(responses, stream):
             sys.stdout.write(GREEN)
             sys.stdout.write("\033[K")
             sys.stdout.write(str(corrected_time) + ": " + transcript + "\n")
-            sys.stdout.write("ZOMGZORS I am haxxing your haxxors! HAX! \n")
+
+            inputs = {"inputs": {"review": [transcript]}}
+            ar = requests.post(URL, json=inputs)
+            toxicity = ar.json().get("outputs").get("prediction")[0][0]
+
+            if 0 < toxicity < 0.25:
+                sys.stdout.write("[Antidote: Nothing too bad yet]: '%s'" % transcript)
+            elif 0.25 < toxicity < 0.75:
+                sys.stdout.write(
+                    "[Antidote: Easy does it, keep your cool...]: '%s'" % transcript
+                )
+            else:
+                sys.stdout.write("[Antidote: Whoa, not cool!]: '%s'" % transcript)
+
+            sys.stdout.flush()
 
             stream.is_final_end_time = stream.result_end_time
             stream.last_transcript_was_final = True
@@ -262,11 +279,7 @@ def main():
                 for content in audio_generator
             )
 
-            print("got here")
-
             responses = client.streaming_recognize(streaming_config, requests)
-
-            print("after")
 
             # Now, put the transcription responses to use.
             listen_print_loop(responses, stream)
