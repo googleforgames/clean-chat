@@ -27,11 +27,11 @@ red() {
 }
 
 yellow() {
-    echo -e ${YELLOW}${1}${REG}
+    echo -e "${YELLOW}${1}${REG}"
 }
 
 green() {
-    echo -e "${GREEN}${1}${REG}"""
+    echo -e "${GREEN}${1}${REG}"
 }
 
 # Any errors encountered which require user intervention?
@@ -44,95 +44,93 @@ error() {
 
 # Checks for command presence in $PATH, errors:
 COMMANDS_OK=true
-check_command() {
-	TESTCOMMAND=$1
-	PATH_TO_CMD=$(command -v $TESTCOMMAND)
-
-    if [ $? = 1 ]; then
-        COMMANDS_OK=false
-        MASTER_OK=false
-        PATH_TO_CMD="-- $(red MISSING) --"
-    fi
-
-	printf " => %-20s %66s\n" "\"$TESTCOMMAND\"..." "[ $(green $PATH_TO_CMD) ]"
+check_commands() {
+    for COMMAND in $@; do
+        PATH_TO_CMD=$(command -v $COMMAND)
+        if [ $? = 0 ]; then
+            printf " => %-20s %66s\n" "\"$COMMAND\"..." "[ $(green $PATH_TO_CMD) ]"
+        else
+            COMMANDS_OK=false
+            MASTER_OK=false
+            PATH_TO_CMD="$(red '-- MISSING --')"
+        fi
+    done
 }
 
-CROSTINI=false
-AUDIO_OK=true
-check_audio() {
-    EXTRALIB="[audio-libraries]"
-    PKG="$(yellow '-- Unknown --')"
+DEBIAN_OK=false
+check_debian() {
+    PACKAGES_OK=true
+    MISSING_PACKAGES=""
 
-    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    for PKG in $@; do
         
-        if [ -f /etc/os-release ]; then
-            source /etc/os-release
-            if [[ $ID == "debian" ]]; then
-
-                EXTRALIB="python3-pyaudio"
-                SYSPKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio 2> /dev/null)
-                if [ $? -eq 0 ]; then
-                    PKG=$(green $SYSPKG)
-                else
-                    PKG=$(red '-- MISSING --')
-                    printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
-                    echo "You are missing the Debian package \"python3-pyaudio\"."
-                    echo -n "Would you like to install it? <y/N>: "
-                    read input
-                    
-                    if [[ $input == "Y" || $input == "y" ]]; then
-                        sudo apt install python3-pyaudio
-                        
-                        SYSPKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio 2> /dev/null)
-                        PKG=$(green $SYSPKG)
-                        printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
-                    else
-                        AUDIO_OK=false
-                    fi
-                fi
-
-                # Best guess ChromeOS's Crostini here:
-                hostnamectl status | grep Virtualization | grep -q lxc && lscpu | grep Hypervisor | grep -q KVM
-                if [ $? -eq 0 ]; then
-                    CROSTINI=true
-                    printf " => %-35s %54s\n" "\"Crostini Microphone Access\"..." "[ $(yellow '¯\_(ツ)_/¯') ]"
-                fi
-            else
-                printf " => %-20s %64s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
-                error "Your Linux distribution is unsupported, but might work."
-                echo "You should be able to install \"python3-pyaudio\" and \"portaudio\" or their equivalents."
-            fi
-
+        SYSPKG=$(dpkg-query -W -f='${binary:Package}==${Version}' $PKG 2> /dev/null)
+        
+        if [ $? -eq 0 ]; then
+            printf " => %-30s %56s\n" "\"$PKG\"..." "[ $(green $SYSPKG) ]"
+        
         else
-            printf " => %-20s %64s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
-            error "Your Linux distribution is missing /etc/os-release, sorry!"
-            echo "You should be able to install \"python3-pyaudio\" and \"portaudio\" or their equivalents."
+            PACKAGES_OK=false
+            MISSING_PACKAGES+="$PKG "
+            printf " => %-30s %56s\n" "\"$PKG\"..." "[ $(red '-- MISSING --') ]"
         fi
+    done
 
-    # Note: Darwin is unsupported on recent versions due to issues with PortAudio.
-    else
-        printf " => %-20s %64s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
-        error "macOS is not supported due to issues with Port Audio and
-        secure microphone access. Sorry!"
-        exit 1
+    if [ $PACKAGES_OK = false ]; then
+        echo "You have one or more missing packages, would you like to install them?"
+        echo -n "<y/N>: "
+        read input
+        
+        if [[ $input == "Y" || $input == "y" ]]; then
+            sudo apt install $MISSING_PACKAGES
+            check_debian $@
+        else
+            error "You have chosen NOT to install system packages. This might not work."
+        fi
     fi
 
+    DEBIAN_OK=true
+}
+
+SYSTEM_OK=false
+check_system() {
+
+    if [ -r /etc/os-release ]; then
+        source /etc/os-release
+
+        if [[ $ID == "debian" ]]; then
+            check_debian python3-{termcolor,pyaudio}
+            
+            if [ $DEBIAN_OK = true ]; then
+                SYSTEM_OK=true
+            fi
+        fi
+    fi
+
+    if [ $SYSTEM_OK = false ]; then
+        printf " => %-20s %64s\n" "[audio-libraries]..." "[ $(yellow '-- Unknown --') ]"
+        error "Your Linux distribution is unsupported, but might work."
+        echo "Ensure these packages are installed: python3-pyaudio python3-termcolor portaudio"
+        echo ""
+    fi
 }
 
 PIP_OK=true
-check_pip() {
-	TESTLIB=$1
-	PIPLIB=$(pip3 freeze | grep $TESTLIB)
+check_pips() {
 
-    if [ $? = 0 ]; then
-        PIPLIB=$(green $PIPLIB)
-    else
-        PIP_OK=false
-        MASTER_OK=false
-        PIPLIB="$(red '-- MISSING --')"
-    fi
+    for LIB in $@; do
+        PIPLIB=$(pip3 freeze | grep $LIB)
 
-	printf " => %-20s %66s\n" "\"$TESTLIB\"..." "[ $PIPLIB ]"
+        if [ $? = 0 ]; then
+            PIPLIB=$(green $PIPLIB)
+        else
+            PIP_OK=false
+            MASTER_OK=false
+            PIPLIB="$(red '-- MISSING --')"
+        fi
+
+        printf " => %-20s %66s\n" "\"$LIB\"..." "[ $PIPLIB ]"
+    done
 }
 
 # Checks to see if gcloud configs are (unset):
@@ -177,17 +175,32 @@ enable_api() {
 	fi
 }
 
+check_os() { 
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        error "macOS is not supported due to issues with Port Audio and
+        secure microphone access. Sorry!"
+        exit 1
+    elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+        printf " => %-35s %51s\n" "GNU/Linux..." "[ $(green $OSTYPE) ]"
+    else
+        error "Your operating system is not supported or detected. Sorry!"
+        exit 1
+    fi
+}
+
 # =============================================================================
 # Sanity Checking: Binaries
 # =============================================================================
 
 echo ""
+echo "Checking operating system..."
+echo "================================================================================"
+check_os
+
+echo ""
 echo "Checking for requisite binaries..."
 echo "================================================================================"
-check_command gcloud
-check_command python3
-check_command pip3
-check_command docker
+check_commands hostnamectl lscpu grep python3 pip3 docker gcloud
 echo ""
 
 if [ $COMMANDS_OK = false ]; then
@@ -195,30 +208,39 @@ if [ $COMMANDS_OK = false ]; then
     exit 1
 fi
 
+# Are we running on ChromeOS's Crostini?
+hostnamectl status | grep Virtualization | grep -q lxc && lscpu | grep Hypervisor | grep -q KVM
+if [ $? -eq 0 ]; then
+    CROSTINI=true
+    echo "                         [38;5;000m [38;5;000m [38;5;000m [38;5;000m [38;5;000m [38;5;008m/[38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m/[38;5;000m [38;5;000m [38;5;000m [38;5;000m [38;5;000m 
+                         [38;5;000m [38;5;000m [38;5;000m [38;5;009m/[38;5;009m/[38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m([38;5;009m/[38;5;009m/[38;5;009m/[38;5;009m/[38;5;000m [38;5;000m 
+                         [38;5;000m [38;5;000m [38;5;006m*[38;5;008m*[38;5;009m/[38;5;009m/[38;5;009m/[38;5;009m([38;5;009m([38;5;009m([38;5;015m@[38;5;015m@[38;5;015m@[38;5;015m@[38;5;015m@[38;5;015m@[38;5;011m([38;5;011m([38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;000m 
+                         [38;5;000m [38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;009m/[38;5;009m/[38;5;009m/[38;5;015m@[38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;015m@[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#
+                         [38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;009m*[38;5;015m@[38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;006m/[38;5;015m@[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#
+                         [38;5;000m [38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;015m@[38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;014m([38;5;006m/[38;5;014m([38;5;015m@[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#
+                         [38;5;000m [38;5;000m [38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;015m@[38;5;015m@[38;5;015m@[38;5;015m@[38;5;015m@[38;5;015m@[38;5;006m,[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;000m 
+                         [38;5;000m [38;5;000m [38;5;000m [38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m,[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;000m [38;5;000m 
+                         [38;5;000m [38;5;000m [38;5;000m [38;5;000m [38;5;000m [38;5;000m [38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m*[38;5;006m,[38;5;006m,[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;011m#[38;5;000m [38;5;000m [38;5;000m [38;5;000m [38;5;000m [0m"
+    echo ""
+    echo "                    $(yellow '==> You appear to be using Crostini! <==')"
+    echo "    $(yellow "Double-check that you've enabled microphone sharing in ChromeOS settings!")"
+    echo "                        $(yellow "This must be done on each boot.")"
+    echo ""
+fi
+
 # =============================================================================
 # Sanity Checking: Libraries
 # =============================================================================
 
 echo ""
-echo "Checking for requisite libraries..."
+echo "Checking for requisite system libraries..."
 echo "================================================================================"
-check_audio
-sync
-check_pip PyAudio
-check_pip termcolor
+check_debian python3-pyaudio python3-termcolor
 
-
-if [ $AUDIO_OK = false ]; then
-    error "Please install the system-specific libraries before continuing."
-    exit 1
-fi
-
-if [ $CROSTINI = true ]; then
-    echo ""
-    echo "                    $(yellow '==> You appear to be using Crostini! <==')"
-    echo "    $(yellow "Double-check that you've enabled microphone sharing in ChromeOS settings!")"
-    echo ""
-fi
+echo ""
+echo "Checking for requisite Python libraries..."
+echo "================================================================================"
+check_pips PyAudio termcolor
 
 if [ $PIP_OK = false ]; then
     error "Please install the missing Python libraries 
@@ -305,3 +327,33 @@ if [ $ENABLED_ANY -eq 0 ]; then
 	wait
     echo "[ Done ]"
 fi
+
+# =============================================================================
+# Configure Docker
+# =============================================================================
+
+echo ""
+echo "Checking and configuring Docker..."
+echo "================================================================================"
+
+MYGROUPS=$(groups)
+if [[ "$MYGROUPS" == *"docker"* ]]; then
+    echo "You are a Dockerer."
+fi
+
+# 0x6a j ┘
+# 0x6b k ┐
+# 0x6c l ┌
+# 0x6d m └
+# 0x6e n ┼
+# 0x71 q ─
+# 0x74 t ├
+# 0x75 u ┤
+# 0x76 v ┴
+# 0x77 w ┬
+# 0x78 x │
+
+echo ""
+echo "┌──────────────────────────────────────────────────────────────────────────────┐"
+echo "│                             YOUR SYSTEM IS READY                             │"
+echo "└──────────────────────────────────────────────────────────────────────────────┘"
