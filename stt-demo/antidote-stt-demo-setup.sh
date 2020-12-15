@@ -98,21 +98,23 @@ check_audio() {
                     printf " => %-35s %54s\n" "\"Crostini Microphone Access\"..." "[ $(yellow '¯\_(ツ)_/¯') ]"
                 fi
             else
-                printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
+                printf " => %-20s %64s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
                 error "Your Linux distribution is unsupported, but might work."
                 echo "You should be able to install \"python3-pyaudio\" and \"portaudio\" or their equivalents."
             fi
 
         else
-            printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
+            printf " => %-20s %64s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
             error "Your Linux distribution is missing /etc/os-release, sorry!"
             echo "You should be able to install \"python3-pyaudio\" and \"portaudio\" or their equivalents."
         fi
 
     # Note: Darwin is unsupported on recent versions due to issues with PortAudio.
     else
-        printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
-        error "You are using an unsupported operating system, sorry!"
+        printf " => %-20s %64s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
+        error "macOS is not supported due to issues with Port Audio and
+        secure microphone access. Sorry!"
+        exit 1
     fi
 
 }
