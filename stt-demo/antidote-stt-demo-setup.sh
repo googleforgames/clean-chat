@@ -60,23 +60,35 @@ check_command() {
 CROSTINI=false
 AUDIO_OK=true
 check_audio() {
-    EXTRALIB="Something"
-    PKG="$(red '-- MISSING --')"
+    EXTRALIB="[audio-libraries]"
+    PKG="$(yellow '-- Unknown --')"
 
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         
-        # Linux
         if [ -f /etc/os-release ]; then
             source /etc/os-release
             if [[ $ID == "debian" ]]; then
 
-                EXTRALIB="python3-pyadio"
+                EXTRALIB="python3-pyaudio"
                 SYSPKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio 2> /dev/null)
                 if [ $? -eq 0 ]; then
                     PKG=$(green $SYSPKG)
                 else
-                    echo "You should install python3-pyaudio, as it is a system package on Debian."
-                    AUDIO_OK=false
+                    PKG=$(red '-- MISSING --')
+                    printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
+                    echo "You are missing the Debian package \"python3-pyaudio\"."
+                    echo -n "Would you like to install it? <y/N>: "
+                    read input
+                    
+                    if [[ $input == "Y" || $input == "y" ]]; then
+                        sudo apt install python3-pyaudio
+                        
+                        SYSPKG=$(dpkg-query -W -f='${binary:Package}==${Version}' python3-pyaudio 2> /dev/null)
+                        PKG=$(green $SYSPKG)
+                        printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
+                    else
+                        AUDIO_OK=false
+                    fi
                 fi
 
                 # Best guess ChromeOS's Crostini here:
@@ -85,40 +97,24 @@ check_audio() {
                     CROSTINI=true
                     printf " => %-35s %54s\n" "\"Crostini Microphone Access\"..." "[ $(yellow '¯\_(ツ)_/¯') ]"
                 fi
-
-            elif [[ $ID == "centos" || $ID == "rhel" ]]; then
-
-                EXTRALIB="portaudio-devel"
-                SYSPKG=$(rpm -qa | grep portaudio-devel)
-                if [ $? -eq 0 ]; then
-                    PKG=$(green $SYSPKG)
-                else
-                    echo "You should install portaudio-devel (from EPEL), as PyAudio requires it."
-                    AUDIO_OK=false
-                fi
+            else
+                printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
+                error "Your Linux distribution is unsupported, but might work."
+                echo "You should be able to install \"python3-pyaudio\" and \"portaudio\" or their equivalents."
             fi
+
         else
+            printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
             error "Your Linux distribution is missing /etc/os-release, sorry!"
-            exit 1
+            echo "You should be able to install \"python3-pyaudio\" and \"portaudio\" or their equivalents."
         fi
 
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-
-        EXTRALIB="portaudio"
-        SYSPKG=$(brew list --versions --formula portaudio)
-        if [ $? -eq 0 ]; then
-            PKG=$(green "$SYSPKG")
-        else
-            echo "You should install portaudio, as PyAudio requires it."
-            AUDIO_OK=false
-        fi
-
+    # Note: Darwin is unsupported on recent versions due to issues with PortAudio.
     else
+        printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
         error "You are using an unsupported operating system, sorry!"
-        exit 1
     fi
 
-    printf " => %-20s %66s\n" "\"$EXTRALIB\"..." "[ $PKG ]"
 }
 
 PIP_OK=true
@@ -204,9 +200,11 @@ fi
 echo ""
 echo "Checking for requisite libraries..."
 echo "================================================================================"
+check_audio
+sync
 check_pip PyAudio
 check_pip termcolor
-check_audio
+
 
 if [ $AUDIO_OK = false ]; then
     error "Please install the system-specific libraries before continuing."
