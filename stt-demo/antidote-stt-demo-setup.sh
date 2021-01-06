@@ -48,7 +48,7 @@ check_commands() {
     for COMMAND in $@; do
         PATH_TO_CMD=$(command -v $COMMAND)
         if [ $? = 0 ]; then
-            printf " => %-20s %66s\n" "\"$COMMAND\"..." "[ $(green $PATH_TO_CMD) ]"
+            printf " => %-30s %56s\n" "\"$COMMAND\"..." "[ $(green $PATH_TO_CMD) ]"
         else
             COMMANDS_OK=false
             MASTER_OK=false
@@ -127,7 +127,7 @@ check_pips() {
             PIPLIB="$(red '-- MISSING --')"
         fi
 
-        printf " => %-20s %66s\n" "\"$LIB\"..." "[ $PIPLIB ]"
+        printf " => %-30s %56s\n" "\"$LIB\"..." "[ $PIPLIB ]"
     done
 }
 
@@ -143,7 +143,7 @@ check_unset() {
         PARAM="$(red '-- UNSET --')"
 	fi
 
-    printf " => %-20s %66s\n" "\"$VAR\"..." "[ $PARAM ]"
+    printf " => %-30s %56s\n" "\"$VAR\"..." "[ $PARAM ]"
 }
 
 CREDS_OK=true
@@ -156,7 +156,7 @@ check_default_creds() {
         TOKEN="-- $(red MISSING) --"
     fi
 
-    printf " => %-32s %50s\n" "\"application-default credentials\"..." "[ $TOKEN ]"
+    printf " => %-40s %46s\n" "\"application-default credentials\"..." "[ $TOKEN ]"
 }
 
 # Returns just the value we're looking for OR unset:
@@ -235,7 +235,7 @@ echo ""
 echo "Checking for requisite system libraries..."
 echo "================================================================================"
 if [ $LINUX_OK = true ]; then
-	check_debian python3-pyaudio python3-termcolor
+	check_debian python3-pyaudio python3-termcolor python3-requests python3-pip
 else
 	echo "Unable to check your system as it is unsupported."
 fi
@@ -243,7 +243,7 @@ fi
 echo ""
 echo "Checking for requisite Python libraries..."
 echo "================================================================================"
-check_pips PyAudio termcolor
+check_pips PyAudio termcolor google-cloud-speech
 
 if [ $PIP_OK = false ]; then
     error "Please install the missing Python libraries 
@@ -253,6 +253,8 @@ fi
 # =============================================================================
 # Sanity Checking: gcloud stuff
 # =============================================================================
+
+# TODO: Check/print the current project.
 
 # This executes all the gcloud commands in parallel and then assigns them to separate variables:
 # Needed for non-array capabale bashes, and for speed.
@@ -286,6 +288,10 @@ if [ $MASTER_OK = false ]; then
     exit 1
 fi
 
+echo ""
+echo "Your current project is: >> $GCP_PROJECT <<"
+echo ""
+
 # =============================================================================
 # Sanity Checking: APIs
 # =============================================================================
@@ -313,10 +319,10 @@ ENABLED_ANY=1
 for REQUIRED_API in $REQUIRED_APIS; do
 	if [ $(grep -q $REQUIRED_API <(echo $GCP_CURRENT_APIS))$? -eq 0 ]; then
 		# It's already enabled:
-        printf " => %-20s %66s\n" "\"$REQUIRED_API\"..." "[ $(green ON) ]"
+        printf " => %-30s %56s\n" "\"$REQUIRED_API\"..." "[ $(green ON) ]"
 	else
 		# It needs to be enabled:
-        printf " => %-20s %66s\n" "\"$REQUIRED_API\"..." "[ $(red OFF) ]"
+        printf " => %-30s %56s\n" "\"$REQUIRED_API\"..." "[ $(red OFF) ]"
 		enable_api $REQUIRED_API.googleapis.com &
 		ENABLED_ANY=0
 	fi
