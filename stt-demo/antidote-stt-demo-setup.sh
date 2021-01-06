@@ -92,23 +92,21 @@ check_debian() {
     DEBIAN_OK=true
 }
 
-SYSTEM_OK=false
-check_system() {
+LINUX_OK=false
+check_linux() {
 
     if [ -r /etc/os-release ]; then
         source /etc/os-release
 
         if [[ $ID == "debian" ]]; then
-            check_debian python3-{termcolor,pyaudio}
-            
-            if [ $DEBIAN_OK = true ]; then
-                SYSTEM_OK=true
-            fi
+            LINUX_OK="true"
         fi
     fi
 
-    if [ $SYSTEM_OK = false ]; then
-        printf " => %-20s %64s\n" "[audio-libraries]..." "[ $(yellow '-- Unknown --') ]"
+	ID=$(yellow $ID)
+
+    if [ $LINUX_OK = false ]; then
+        printf " => %-30s %56s\n" "Debian or Crostini..." "[ $ID ]" #"[ $(yellow "$ID") ]"
         error "Your Linux distribution is unsupported, but might work."
         echo "Ensure these packages are installed: python3-pyaudio python3-termcolor portaudio"
         echo ""
@@ -196,6 +194,7 @@ echo ""
 echo "Checking operating system..."
 echo "================================================================================"
 check_os
+check_linux
 
 echo ""
 echo "Checking for requisite binaries..."
@@ -235,7 +234,11 @@ fi
 echo ""
 echo "Checking for requisite system libraries..."
 echo "================================================================================"
-check_debian python3-pyaudio python3-termcolor
+if [ $LINUX_OK = true ]; then
+	check_debian python3-pyaudio python3-termcolor
+else
+	echo "Unable to check your system as it is unsupported."
+fi
 
 echo ""
 echo "Checking for requisite Python libraries..."
