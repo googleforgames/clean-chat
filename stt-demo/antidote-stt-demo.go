@@ -37,7 +37,7 @@ func censor(offense string) string {
 	if len(offense) < 4 {
 		return strings.Repeat("*", len(offense))
 	}
-	return offense[0:1] + strings.Repeat("*", len(offense)-2) + offense[len(offense)-1:len(offense)]
+	return offense[0:1] + strings.Repeat("*", len(offense)-1)
 }
 
 func getToxicity(comment string) float64 {
@@ -151,14 +151,10 @@ func main() {
 			comment := result.Alternatives[0].Transcript
 			toxicity := getToxicity(comment)
 
-			if toxicity < 0.25 {
-				fmt.Println("Normal speech detected:", comment)
-			} else if toxicity < 0.5 {
-				fmt.Println("Slightly bad speech detected:", bwrx.ReplaceAllStringFunc(comment, censor))
-			} else if toxicity < 0.75 {
-				fmt.Println("Really bad speech detected:", bwrx.ReplaceAllStringFunc(comment, censor))
+			if toxicity < 0.5 {
+				fmt.Println("Probably OK :", comment)
 			} else {
-				fmt.Println("Hateful speech detected:", bwrx.ReplaceAllStringFunc(comment, censor))
+				fmt.Println("Probably BAD:", bwrx.ReplaceAllStringFunc(comment, censor))
 			}
 
 			// fmt.Printf("Result: %+v\n", result.Alternatives[0].Transcript)
