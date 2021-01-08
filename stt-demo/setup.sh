@@ -113,7 +113,7 @@ enable_api() {
 echo ""
 echo "Checking for requisite binaries..."
 echo "================================================================================"
-check_commands hostnamectl lscpu grep go docker gcloud
+check_commands hostnamectl lscpu grep go docker gcloud make rec git
 echo ""
 
 if [ $COMMANDS_OK = false ]; then

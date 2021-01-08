@@ -1,4 +1,4 @@
-// rec --channels=1 --bits=16 --rate=16k --type=raw --no-show-progress - | ./livecaption
+// rec --channels=1 --bits=16 --rate=16k --type=raw --no-show-progress - | ./antidote-stt-demo
 package main
 
 // [START speech_transcribe_streaming_mic]
@@ -67,8 +67,16 @@ func getToxicity(comment string) float64 {
 
 func main() {
 
-	file, _ := os.Open("bad-words.txt")
+	fmt.Println("Welcome to Antidote STT!")
+	log.Println("Initializing speech server...")
+
+	file, err := os.Open("bad-words.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer file.Close()
+
+	log.Printf("Read in offensive word list OK.")
 
 	var badWords string
 	scanner := bufio.NewScanner(file)
@@ -77,6 +85,9 @@ func main() {
 	}
 
 	bwrx := regexp.MustCompile(badWords[0 : len(badWords)-1])
+
+	log.Printf("Generated censorship regular expressions OK.")
+	log.Printf("Starting up transcription subsystem...")
 
 	ctx := context.Background()
 
@@ -131,8 +142,12 @@ func main() {
 		}
 	}()
 
+	fmt.Println("\nAntidote is listening, say something (then pause).")
+	fmt.Println("  => Use [CTRL]+[C] to quit <=\n")
+
 	for {
 		resp, err := stream.Recv()
+
 		if err == io.EOF {
 			break
 		}
@@ -152,16 +167,11 @@ func main() {
 			toxicity := getToxicity(comment)
 
 			if toxicity < 0.5 {
-				fmt.Println("Probably OK :", comment)
+				fmt.Println("[ ~ OK ~ ] : ", comment)
 			} else {
-				fmt.Println("Probably BAD:", bwrx.ReplaceAllStringFunc(comment, censor))
+				fmt.Println("[ TOXIC! ] : ", bwrx.ReplaceAllStringFunc(comment, censor))
 			}
-
-			// fmt.Printf("Result: %+v\n", result.Alternatives[0].Transcript)
-			// Result: alternatives:{transcript:"will this function"  confidence:0.9136761}  is_final:true  result_end_time:{seconds:3  nanos:690000000}
 
 		}
 	}
 }
-
-// [END speech_transcribe_streaming_mic]
