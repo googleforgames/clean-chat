@@ -23,15 +23,22 @@ YELLOW="\033[0;33m"
 REG="\033[0m"
 
 red() {
-    echo -e "${RED}${1}${REG}"
+    echo -e "${RED}${@}${REG}"
 }
 
 yellow() {
-    echo -e "${YELLOW}${1}${REG}"
+    echo -e "${YELLOW}${@}${REG}"
 }
 
 green() {
-    echo -e "${GREEN}${1}${REG}"
+    echo -e "${GREEN}${@}${REG}"
+}
+
+# Attribute Print, prints in the format, works with colors:
+# ================================================================================
+# => "thing"                                                            [ stauts ]
+attrprint() {
+    printf " => %-40s %46s\n" "\"$1\"..." "[ $2 ]"
 }
 
 # Any errors encountered which require user intervention?
@@ -48,86 +55,11 @@ check_commands() {
     for COMMAND in $@; do
         PATH_TO_CMD=$(command -v $COMMAND)
         if [ $? = 0 ]; then
-            printf " => %-30s %56s\n" "\"$COMMAND\"..." "[ $(green $PATH_TO_CMD) ]"
+            attrprint $COMMAND "$(green $PATH_TO_CMD)"
         else
             COMMANDS_OK=false
-            MASTER_OK=false
-            PATH_TO_CMD="$(red '-- MISSING --')"
+            attrprint $COMMAND "$(red -- MISSING --)"
         fi
-    done
-}
-
-DEBIAN_OK=false
-check_debian() {
-    PACKAGES_OK=true
-    MISSING_PACKAGES=""
-
-    for PKG in $@; do
-        
-        SYSPKG=$(dpkg-query -W -f='${binary:Package}==${Version}' $PKG 2> /dev/null)
-        
-        if [ $? -eq 0 ]; then
-            printf " => %-30s %56s\n" "\"$PKG\"..." "[ $(green $SYSPKG) ]"
-        
-        else
-            PACKAGES_OK=false
-            MISSING_PACKAGES+="$PKG "
-            printf " => %-30s %56s\n" "\"$PKG\"..." "[ $(red '-- MISSING --') ]"
-        fi
-    done
-
-    if [ $PACKAGES_OK = false ]; then
-        echo "You have one or more missing packages, would you like to install them?"
-        echo -n "<y/N>: "
-        read input
-        
-        if [[ $input == "Y" || $input == "y" ]]; then
-            sudo apt install $MISSING_PACKAGES
-            check_debian $@
-        else
-            error "You have chosen NOT to install system packages. This might not work."
-        fi
-    fi
-
-    DEBIAN_OK=true
-}
-
-LINUX_OK=false
-check_linux() {
-
-    if [ -r /etc/os-release ]; then
-        source /etc/os-release
-
-        if [[ $ID == "debian" ]]; then
-            LINUX_OK="true"
-        fi
-    fi
-
-	ID=$(yellow $ID)
-
-    if [ $LINUX_OK = false ]; then
-        printf " => %-30s %56s\n" "Debian or Crostini..." "[ $ID ]" #"[ $(yellow "$ID") ]"
-        error "Your Linux distribution is unsupported, but might work."
-        echo "Ensure these packages are installed: python3-pyaudio python3-termcolor portaudio"
-        echo ""
-    fi
-}
-
-PIP_OK=true
-check_pips() {
-
-    for LIB in $@; do
-        PIPLIB=$(pip3 freeze | grep $LIB)
-
-        if [ $? = 0 ]; then
-            PIPLIB=$(green $PIPLIB)
-        else
-            PIP_OK=false
-            MASTER_OK=false
-            PIPLIB="$(red '-- MISSING --')"
-        fi
-
-        printf " => %-30s %56s\n" "\"$LIB\"..." "[ $PIPLIB ]"
     done
 }
 
@@ -146,6 +78,7 @@ check_unset() {
     printf " => %-30s %56s\n" "\"$VAR\"..." "[ $PARAM ]"
 }
 
+# FIXME/TODO: Fix this to check proper creds, as speech no longer works with ADC:
 CREDS_OK=true
 check_default_creds() {
     TOKEN=$(green OK)
@@ -173,37 +106,18 @@ enable_api() {
 	fi
 }
 
-check_os() { 
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        error "macOS is not supported due to issues with Port Audio and
-        secure microphone access. Sorry!"
-        exit 1
-    elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-        printf " => %-35s %51s\n" "GNU/Linux..." "[ $(green $OSTYPE) ]"
-    else
-        error "Your operating system is not supported or detected. Sorry!"
-        exit 1
-    fi
-}
-
 # =============================================================================
 # Sanity Checking: Binaries
 # =============================================================================
 
 echo ""
-echo "Checking operating system..."
-echo "================================================================================"
-check_os
-check_linux
-
-echo ""
 echo "Checking for requisite binaries..."
 echo "================================================================================"
-check_commands hostnamectl lscpu grep python3 pip3 docker gcloud
+check_commands hostnamectl lscpu grep go docker gcloud
 echo ""
 
 if [ $COMMANDS_OK = false ]; then
-    error "Please install the missing binaries/symlinks before continuing."
+    error "Please install the missing binaries before continuing."
     exit 1
 fi
 
@@ -231,30 +145,11 @@ fi
 # Sanity Checking: Libraries
 # =============================================================================
 
-echo ""
-echo "Checking for requisite system libraries..."
-echo "================================================================================"
-if [ $LINUX_OK = true ]; then
-	check_debian python3-pyaudio python3-termcolor python3-requests python3-pip
-else
-	echo "Unable to check your system as it is unsupported."
-fi
-
-echo ""
-echo "Checking for requisite Python libraries..."
-echo "================================================================================"
-check_pips PyAudio termcolor google-cloud-speech
-
-if [ $PIP_OK = false ]; then
-    error "Please install the missing Python libraries 
-    before continuing."
-fi
+# TODO: Any library checking for Go?
 
 # =============================================================================
 # Sanity Checking: gcloud stuff
 # =============================================================================
-
-# TODO: Check/print the current project.
 
 # This executes all the gcloud commands in parallel and then assigns them to separate variables:
 # Needed for non-array capabale bashes, and for speed.
@@ -283,15 +178,6 @@ if [ $CREDS_OK = false ]; then
     gcloud auth application-default login"
 fi
 
-if [ $MASTER_OK = false ]; then
-    error "Errors were detected, exiting."
-    exit 1
-fi
-
-echo ""
-echo "Your current project is: >> $GCP_PROJECT <<"
-echo ""
-
 # =============================================================================
 # Sanity Checking: APIs
 # =============================================================================
@@ -314,24 +200,30 @@ echo "==========================================================================
 GCP_CURRENT_APIS=$(gcloud services list | grep -v NAME | cut -f1 -d'.')
 
 # Keep track of whether we modified the API state for friendliness:
-ENABLED_ANY=1
+MISSING_APIS=false
 
 for REQUIRED_API in $REQUIRED_APIS; do
 	if [ $(grep -q $REQUIRED_API <(echo $GCP_CURRENT_APIS))$? -eq 0 ]; then
-		# It's already enabled:
-        printf " => %-30s %56s\n" "\"$REQUIRED_API\"..." "[ $(green ON) ]"
+        attrprint $REQUIRED_API "$(green ON)"
 	else
-		# It needs to be enabled:
-        printf " => %-30s %56s\n" "\"$REQUIRED_API\"..." "[ $(red OFF) ]"
+        attrprint $REQUIRED_API "$(red OFF)"
 		enable_api $REQUIRED_API.googleapis.com &
-		ENABLED_ANY=0
+		MISSING_APIS=true
 	fi
 done
 
 # If we've enabeld any API, wait for child processes to finish:
-if [ $ENABLED_ANY -eq 0 ]; then
+if [ $MISSING_APIS = true ]; then
     echo ""
     echo "You had one or more APIs disabled. Please wait while they are enabled."
+    echo "Would you like to enable them?"
+    echo -n "<Y/n> : "
+    read foo
+    if [ $foo = y ]; then
+        echo "Poop!"
+    else
+        echo "Nope"
+    fi
 	printf '%-72s' " Concurrently enabling APIs..."
 	wait
     echo "[ Done ]"
