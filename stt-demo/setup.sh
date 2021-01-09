@@ -113,7 +113,7 @@ enable_api() {
 echo ""
 echo "Checking for requisite binaries..."
 echo "================================================================================"
-check_commands hostnamectl lscpu grep go docker gcloud make rec git
+check_commands docker hostnamectl lscpu gcloud grep go make rec upx
 echo ""
 
 if [ $COMMANDS_OK = false ]; then
@@ -140,12 +140,6 @@ if [ $? -eq 0 ]; then
     echo "                        $(yellow "This must be done on each boot.")"
     echo ""
 fi
-
-# =============================================================================
-# Sanity Checking: Libraries
-# =============================================================================
-
-# TODO: Any library checking for Go?
 
 # =============================================================================
 # Sanity Checking: gcloud stuff
@@ -218,11 +212,9 @@ if [ $MISSING_APIS = true ]; then
     echo "You had one or more APIs disabled. Please wait while they are enabled."
     echo "Would you like to enable them?"
     echo -n "<Y/n> : "
-    read foo
-    if [ $foo = y ]; then
-        echo "Poop!"
-    else
-        echo "Nope"
+    read choice
+    if [ $choice != y ]; then
+        exit 1
     fi
 	printf '%-72s' " Concurrently enabling APIs..."
 	wait
@@ -241,6 +233,20 @@ MYGROUPS=$(groups)
 if [[ "$MYGROUPS" == *"docker"* ]]; then
     echo "You are a Dockerer."
 fi
+
+# =============================================================================
+# Build the binary
+# =============================================================================
+
+echo ""
+echo "Building the binary..."
+echo "================================================================================"
+
+make
+
+# =============================================================================
+# You're all set!
+# =============================================================================
 
 # 0x6a j ┘
 # 0x6b k ┐
