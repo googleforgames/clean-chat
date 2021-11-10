@@ -8,9 +8,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/googleforgames/antidote">
-    <img src="docs/images/logo1.png" alt="Logo" width="80" height="80">
-  </a>
+  <img src="assets/images/antidote_logo1.png" alt="Logo" width="80" height="80">
 
   <h3 align="center">Antidote</h3>
 
@@ -55,13 +53,13 @@
 
 Antidote is an anti-toxicity, anti-cheat solution that makes games more enjoyable and inclusive for all.
 
-Toxic behavior, content and players exist in all games, therefore it’s very important to regulate toxicity in the gaming industry to maintain the quality game experience that players will want to stay in.
+Toxic behavior, content, and players exist in all games. Therefore it’s very important to regulate toxicity in the gaming industry to maintain the quality game experience that players will want to stay in.
 
 Toxic behavior is becoming a large problem for online communities. Existing solutions are failing to stay relevant and stay fair.
 
 Antidote is a globally scalable solution to detect and flag toxic or disruptive behavior. 
 
-This gaming solution offers a configurable framework for analyzing chat/text messages, audio, and telemtry data.
+This gaming solution offers a configurable framework for analyzing chat/text messages and audio.
 
 
 These components make up the solution architecture:
@@ -70,17 +68,21 @@ These components make up the solution architecture:
 
 The collectors are modular comments used to integrate with 3rd party services such as 3rd party chat or voice services. The focus is to build up a pluggable repo of modules that connect to various services as well as general modules that listen for UDP or TCP traffic (as an example). Collectors will be build and open sourced based on demand.
 
-**2. Scoring Engine**
+**2. Endpoint**
+
+Antidote contains an Endpoint that allows chats and audio files to be analyzed via REST. Example API calls can be found [here](./components/endpoint/app_python/test.sh).
+
+**3. Scoring Engine**
 
 The objective of the Scoring Engine is to analyze, score, and flag toxic or disruptive behavior. It is based on a serverless design pattern, so that it scales to meet varying data traffic patterns. The Scoring Engine is a hydrid model based on a swappable ML model plus heuristic rules to bias or set business specific thresholds.
 
-**3. Ensemble**
-
-The ensemble contains the core logic and algorithms to parse, process, and mathematically combine scores from the scoring engine. These scores may be related to toxicity, griefing, cheat, etc. 
-
 **4. Cloud Functions**
 
-Cloud Functions are used as part of this architecture to trigger serverless functions used as part of the pipeline. They may be used for parsing data, performing quality checks, pass data through an API (such as the Speech-to-text API), or a variety of other tasks. 
+Cloud Functions are used as part of this architecture to trigger serverless functions used as part of the event-driven pipeline. These functions are used for parsing data, performing quality checks, calling ML-based APIs (such as the Speech-to-text API), or a variety of other tasks. 
+
+**5. ML Model Pipeline**
+
+The pipeline module orchestrates training and orchestration of the toxicity model. 
 
 #### Reference Architecture
 ![Architecture](./assets/images/architecture_chat_and_audio_analysis.png)
@@ -89,59 +91,115 @@ Cloud Functions are used as part of this architecture to trigger serverless func
 <!-- GETTING STARTED -->
 ## Getting Started
 
-To get a local copy up and running follow these simple steps.
-
-### Prerequisites
-
-
-
+Follow these steps to config and lauch the Antidote framework:
 
 ### Installation
 
-1.  Edit the [config](config) file based on your GCP project, your naming convensions, and desired parameters. By editing the config file, you are able to refine how sensitive the scoring is, the duration of windowing (which is used to aggregate scores), and a variety of other GCP specific settings. Please see the [config](config) file for all parameter options as well as their associated descriptions. 
-
-2.  Go to the setup folder
+1.  **Edit the [config](config)** file based on your GCP project, your naming convensions, and desired parameters. By editing the config file, you are able to refine how sensitive the scoring is, the duration of windowing (which is used to aggregate scores), and a variety of other GCP specific settings. Please see the [config](config) file for all parameter options as well as their associated descriptions. 
 
 ```
-cd setup
+vi config
 ```
 
-3.  Run [01-setup.sh](setup/01-setup.sh) to spin up all GCP services needed for the solution. 
+2.  **Initialize GCP Services**. This command will enable GCP APIs, create Cloud Storage buckets, create PubSub topics, Create BigQuery Datasets and Tables, etc. 
 
 ```
-./01-setup.sh
+make initialize-gcp
 ```
 
-4.  Deploy the Scoring Engine (the scoring engine runs on Google Cloud Dataflow)
+3.  **Deploy Cloud Functions**
 
 ```
-./02-deploy-scoring-engine.sh
+make deploy-cloud-functions
 ```
 
-5.  Run the demo. There are two options here. You can (1) run a chat/text message demo that processes text entered by a user or (2) run an audio demo that analyzes a user audio file that is dropped in a Cloud Storage bucket. 
+4.  **Deploy the Endpoint Backend** (deployed on Cloud Run)
 
 ```
+make deploy-endpoint-backend
+```
+
+5.  **Deploy the Scoring Engine** (the scoring engine runs on Google Cloud Dataflow)
+
+```
+make deploy-scoring-engine
+```
+
+
+### Run the Demo
+
+There are currently two ways to score toxicity, both which can be demoed. The demos include: 
+
+1) Run a chat/text message client that allows a user to enter text and each text message will be scored for toxic language.  that processes text entered by a user and scores each message. In production, a chat client can be launched in order to forward all chat messages into GCP (via PubSub).
+
+2) Run an audio file demo that analyzes a user audio file that is dropped in a Cloud Storage bucket. In production, files can be programically uploaded into the specified Cloud Storage bucket when a match ends or at a scheduled time for batch scoring.
+
+```
+# Option #1
 # Run the Chat/Text Message Demo
+cd ./setup 
 ./10-demo-chat.sh
 ```
 
 ```
+# Option #2
 # Run the Audio Demo
+cd ./setup
 ./10-demo-audio-stt.sh
 ```
+## Machine Learning Pipeline
 
+This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently utilizes the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model. 
 
+The architecture consists of: 
+- The model pipeline (tfx_pipeline.py). A TFX/Kubeflow pipeline to transform the training data, train the model, and push the resulting model artifact 
+  - transform.py (TFX transform file)
+  - trainer.py (TFX training file)
+- The pipeline runner (kubeflow_dag_runner.py)
 
+You will need to setup a kubernetes cluster with kubeflow deployed on it. This is where your built pipeline will reside. 
 
-<!-- USAGE EXAMPLES -->
-## Usage
+You can set up your cluster with [AI Platform Pipelines](https://cloud.google.com/ai-platform/pipelines/docs/getting-started) manually, or automatically build the cluster with: 
+```
+create-pipeline-cluster
+```
 
+Be sure to set the name of your endpoint
 
+```
+export ENDPOINT="Your Endpoint Name"
+```
+You can build your pipeline by running 
 
+```
+make tfx-create-pipeline
+```
 
+Additional runs of the pipeline can be conducted with: 
+
+``` 
+make tfx-run
+```
+
+### Setting Up Model Serving (In Progress)
+
+To deploy your pipeline to the cloud, we need both a serving container and a serving cluster. You can create both with:  
+
+```
+make build-model-serving
+create-serving-cluster: 
+```
+You can then deploy your pipeline with: 
+```
+make deploy serving
+```
 
 <!-- ROADMAP -->
 ## Roadmap
+
+Project is currently in alpha status, and is being actively developed. Expect things to break.
+
+Not to be used in production systems.
 
 See the [open issues](https://github.com/github_username/repo_name/issues) for a list of proposed features (and known issues).
 
@@ -149,13 +207,11 @@ See the [open issues](https://github.com/github_username/repo_name/issues) for a
 <!-- CONTRIBUTING -->
 ## Contributing
 
+Participation in this project comes under the Contributor Covenant Code of Conduct
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Please read the contributing guide for directions on writing code and submitting Pull Requests.
 
+Antidote is in active development - we would love your help in shaping its future!
 
 <!-- LICENSE -->
 ## License
@@ -163,19 +219,15 @@ See the [open issues](https://github.com/github_username/repo_name/issues) for a
 Distributed under the Apache 2.0 License. See `LICENSE` for more information.
 
 
-<!-- CONTACT -->
-## Contact
-
-Project Link: [https://github.com/googleforgames/antidote](https://github.com/googleforgames/antidote)
-
-
 <!-- REFERENCES -->
 ## References
 
 * [Jigsaw Perspective API](https://www.perspectiveapi.com/)
-* [Nice set of Cyber Bullying Datasets](https://data.mendeley.com/datasets/jf4pzyvnpj/1#__sid=js0)
-
-
+* [Dataset - Kaggle Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge)
+* [Dataset - Kaggle League of Legends Tribunal Chatlogs](https://www.kaggle.com/simshengxue/league-of-legends-tribunal-chatlogs)
+* [Dataset - Cyber Bullying](https://data.mendeley.com/datasets/jf4pzyvnpj/1#__sid=js0)
+* [GCP - Building a pipeline to profile audio content](https://cloud.google.com/architecture/building-a-pipeline-to-profile-audio-content#deploy_the_cloud_function_that_tests_for_appropriate_content)
+* [GCP - Implementing production-ready live audio transcription using Speech-to-Text](https://cloud.google.com/architecture/architecture-for-production-ready-live-transcription-tutorial)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
