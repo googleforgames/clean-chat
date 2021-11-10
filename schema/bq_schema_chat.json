@@ -1,0 +1,26 @@
+[
+    {
+        "name": "username",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "unique username or user id"
+    },
+    {
+        "name": "timestamp",
+        "type": "INT64",
+        "mode": "NULLABLE",
+        "description": "Unix timestamp"
+    },
+    {
+        "name": "text",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "text comment string"
+    },
+    {
+        "name": "score",
+        "type": "FLOAT64",
+        "mode": "NULLABLE",
+        "description": "toxicity score"
+    }
+]
