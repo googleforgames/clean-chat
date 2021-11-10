@@ -1,0 +1,142 @@
+######################################################
+#
+#  Configs
+#
+#  Update these variables based on your GCP project, 
+#  naming convensions, and desired settings.
+#
+#  Where it makes sense, code has been added
+#  to dynamically set variable values, but these 
+#  can all be overridden by adding in your own values 
+#  within this file. 
+#
+#  NOTE: The "TF_VAR_" prefix is used so that terraform
+#  can dynamically load these env variables.
+#
+######################################################
+
+######################################################
+# General Project Parameters
+######################################################
+
+# GCP Project ID
+export TF_VAR_GCP_PROJECT_ID=<your_gcp_project_id>
+
+# GCP Region where the Antidote resources should be deployed. 
+export TF_VAR_GCP_REGION=us-central1
+
+# Perspective API Key 
+export TF_VAR_PERSPECTIVE_API_KEY=<your_perspective_api_key>
+
+######################################################
+# Google Artifact Repo
+######################################################
+
+export TF_VAR_GCP_ARTIFACT_REGISTRY_NAME=${TF_VAR_GCP_PROJECT_ID}-antidote-repo
+export TF_VAR_GCP_ARTIFACT_REGISTRY_REGION=${TF_VAR_GCP_REGION}
+
+######################################################
+# Google Cloud Storage
+######################################################
+
+# GCS bucket where text-based chat files will be dropped/uploaded.
+export TF_VAR_GCS_BUCKET_TEXT_DROPZONE=${TF_VAR_GCP_PROJECT_ID}-antidote-text-dropzone
+
+# GCS bucket where audio files will be dropped/uploaded.
+export TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_SHORT=${TF_VAR_GCP_PROJECT_ID}-antidote-audio-dropzone-short
+export TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_LONG=${TF_VAR_GCP_PROJECT_ID}-antidote-audio-dropzone-long
+
+# GCS bucket for cloud functions tmp space
+export TF_VAR_GCS_BUCKET_CLOUD_FUNCTIONS=${TF_VAR_GCP_PROJECT_ID}-antidote-cloud-functions
+
+# GCS bucket for Dataflow - tmp and staging assets.
+export TF_VAR_GCS_BUCKET_DATAFLOW=${TF_VAR_GCP_PROJECT_ID}-antidote-dataflow
+
+######################################################
+# Google PubSub
+######################################################
+
+# PubSub topic where chat/txt messages will be sent to for analysis. 
+export TF_VAR_PUBSUB_TOPIC_TEXT_INPUT=${TF_VAR_GCP_PROJECT_ID}-antidote-text-input
+
+# This topic contains the scored messages as a JSON payload.
+export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED=${TF_VAR_GCP_PROJECT_ID}-antidote-text-scored
+export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED_PUSH_ENDPOINT=https://barnyard-myjk3p7wiq-ue.a.run.app/ztest
+
+# PubSub topic for flagged/toxic user (if a toxic user is flagged, a message will be sent here)
+export TF_VAR_PUBSUB_TOPIC_TOXIC=${TF_VAR_GCP_PROJECT_ID}-antidote-toxic-topic
+
+######################################################
+# API Endpoint & Backend
+######################################################
+
+# API Backend App Parameters
+export TF_VAR_APP_CLOUD_RUN_NAME=api-backend
+export TF_VAR_APP_CLOUD_RUN_REGION=us-central1
+
+# API Endpoint Parameters
+export TF_VAR_ENDPOINTS_CLOUD_RUN_NAME=api-endpoint
+export TF_VAR_ENDPOINTS_CLOUD_RUN_REGION=us-central1
+
+######################################################
+# BigQuery
+######################################################
+
+# Locations such as US, EU, us-central1, europe-west1, etc
+export TF_VAR_BIGQUERY_LOCATION=US
+export TF_VAR_BIGQUERY_DATASET=antidote
+export TF_VAR_BIGQUERY_TABLE=scored_chats
+
+######################################################
+# Google Dataflow (and Scoring Engine configs)
+######################################################
+
+# Dataflow Region
+export TF_VAR_DATAFLOW_REGION=${TF_VAR_GCP_REGION}
+
+# Dataflow Runner (typically DataflowRunner or DirectRunner)
+export TF_VAR_DATAFLOW_RUNNER=DataflowRunner
+
+# Scoring engine time window settings
+# Toxic scores are aggregated based on the time window parameters, set below.
+# Window duration (in seconds) is the time window that the aggregation is applied to.  
+# Example: If the WINDOW_DURATION_SECONDS=30, then scores will be aggregated for a 30 second time period.
+# https://beam.apache.org/documentation/programming-guide/#sliding-time-windows 
+export TF_VAR_WINDOW_DURATION_SECONDS=30
+
+# Window sliding is a parameter used to determine when the a new window starts
+# https://beam.apache.org/documentation/programming-guide/#sliding-time-windows 
+export TF_VAR_WINDOW_SLIDING_SECONDS=5
+
+# Toxicity Threshold (from 0.0 to 1.0 where 1.0 is highly toxic) 
+export TF_VAR_TOXIC_USER_THRESHOLD=0.60
+
+######################################################
+# Machine Learning
+######################################################
+
+# GKE cluster name for ML Pipeline
+export TF_VAR_ML_CLUSTER=${TF_VAR_GCP_PROJECT_ID}-antidote-pipeline-cluster
+
+# GKE zone
+export TF_VAR_ML_ZONE=us-west1-a
+
+# GKE machine type
+export TF_VAR_ML_MACHINE_TYPE=n1-standard-2
+
+# Additional ML Pipeline Configs
+export TF_VAR_ML_SCOPES=cloud-platform
+export TF_VAR_ML_APP_INSTANCE_NAME=${TF_VAR_GCP_PROJECT_ID}-antidote-pipeline
+export TF_VAR_ML_NAMESPACE=ml-namespace
+export TF_VAR_MARKETPLACE_TOOLS_TAG=remove-ui-ownerrefs
+export TF_VAR_MARKETPLACE_TOOLS_IMAGE=gcr.io/cloud-marketplace-staging/marketplace-k8s-app-tools/k8s/dev
+
+######################################################
+# Get current working dir
+######################################################
+
+export TF_VAR_CURRENT_DIR=$PWD
+
+######################################################
+# End of Config
+######################################################
