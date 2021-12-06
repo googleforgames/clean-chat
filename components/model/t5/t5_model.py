@@ -57,14 +57,14 @@ class T5Model(object)
 	def load(**kwargs):
  		'''
  		Loads lines from text files 
- 		Output: {'comment': b'you are terrible', 'answer': b'0.87'}
+ 		Output: {'comment': b'you are terrible', 'rating': b'0.87'}
 
  		'''
- 		ds = tf.data.TextLineDataset(nq_tsv_path[split])
- 		# Split each "<comment>\t<rating>" example into (comment, rating) tuple.
+ 		ds = tf.data.TextLineDataset(self.training_data_dir)
+ 		# Split each "<comment>,<rating>" example into (comment, rating) tuple.
   	ds = ds.map(
       	functools.partial(tf.io.decode_csv, record_defaults=["", ""],
-        	                field_delim="\t", use_quote_delim=False),
+        	                field_delim=",", use_quote_delim=False),
       	num_parallel_calls=tf.data.experimental.AUTOTUNE)
   	# Map each tuple to a {"comment": ... "rating": ...} dict.
   	ds = ds.map(lambda *ex: dict(zip(["comment", "rating"], ex)))

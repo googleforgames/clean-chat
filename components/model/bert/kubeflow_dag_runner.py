@@ -1,10 +1,10 @@
 import os
 from tfx.orchestration.kubeflow import kubeflow_dag_runner
 from tfx.proto import trainer_pb2
-from pipeline import pipeline 
-from pipeline import config
+import pipeline 
+import config
 
-def run_pipline():
+def create_pipline():
   metadata_config = kubeflow_dag_runner.get_default_kubeflow_metadata_config()
   tfx_image = os.environ.get('config.TFX_IMAGE', None)
   runner_config = kubeflow_dag_runner.KubeflowDagRunnerConfig(
@@ -25,5 +25,3 @@ def run_pipline():
       )
   )
 
-if __name__ == '__main__':
-  run_pipline()
