@@ -1,2 +1,0 @@
-google-cloud-pubsub==2.5.0
-random-username==1.0.2
