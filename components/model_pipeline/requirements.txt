@@ -1,0 +1,6 @@
+docker==4.2.0
+kfp==0.5.1
+kfp-server-api==0.5.0
+kubernetes==10.1.0
+tfx==0.21.4
+tfx-bsl==0.21.4

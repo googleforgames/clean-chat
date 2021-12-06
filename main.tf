@@ -32,7 +32,37 @@ terraform {
 }
 
 /******************************************************
+
+Enable Google Cloud Services
+
+*******************************************************/
+
+variable "gcp_service_list" {
+  description ="The list of apis necessary for the project"
+  type = list(string)
+  default = [
+    "storage.googleapis.com",
+	"cloudfunctions.googleapis.com",
+	"run.googleapis.com",
+	"container.googleapis.com",
+	"containerregistry.googleapis.com",
+	"artifactregistry.googleapis.com",
+	"cloudbuild.googleapis.com",
+	"dataflow.googleapis.com",
+	"speech.googleapis.com"
+  ]
+}
+
+resource "google_project_service" "gcp_services" {
+  for_each = toset(var.gcp_service_list)
+  project = "${var.GCP_PROJECT_ID}"
+  service = each.key
+}
+
+/******************************************************
+
 Google Cloud Storage Resources
+
 *******************************************************/
 
 resource "google_storage_bucket" "text-dropzone" {
@@ -89,7 +119,9 @@ resource "google_storage_bucket_object" "dataflow-tmp-setup" {
 }
 
 /******************************************************
+
 Google PubSub Resources
+
 *******************************************************/
 
 resource "google_pubsub_topic" "text-input" {
@@ -142,7 +174,9 @@ resource "google_pubsub_subscription" "toxic-topic-sub" {
 }
 
 /******************************************************
+
 Google Cloud BigQuery Resources
+
 *******************************************************/
 
 resource "google_bigquery_dataset" "bigquery_dataset" {
@@ -187,7 +221,9 @@ EOF
 }
 
 /******************************************************
+
 Google Cloud Functions Resources
+
 *******************************************************/
 
 data "archive_file" "cf-speech-to-text-short-zip" {

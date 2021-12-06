@@ -20,13 +20,14 @@
 ######################################################
 
 # GCP Project ID
-export TF_VAR_GCP_PROJECT_ID=<your_gcp_project_id>
+export TF_VAR_GCP_PROJECT_ID=<YOUR_GCP_PROJECT_ID>
 
 # GCP Region where the Antidote resources should be deployed. 
 export TF_VAR_GCP_REGION=us-central1
 
-# Perspective API Key 
-export TF_VAR_PERSPECTIVE_API_KEY=<your_perspective_api_key>
+# Perspective API Key (if using Perspective as the ML model)
+# Reference: https://developers.perspectiveapi.com/s/about-the-api
+export TF_VAR_PERSPECTIVE_API_KEY=<YOUR_PERSPECTIVE_API_KEY>
 
 ######################################################
 # Google Artifact Repo
@@ -61,7 +62,7 @@ export TF_VAR_PUBSUB_TOPIC_TEXT_INPUT=${TF_VAR_GCP_PROJECT_ID}-antidote-text-inp
 
 # This topic contains the scored messages as a JSON payload.
 export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED=${TF_VAR_GCP_PROJECT_ID}-antidote-text-scored
-export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED_PUSH_ENDPOINT=https://barnyard-myjk3p7wiq-ue.a.run.app/ztest
+export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED_PUSH_ENDPOINT=https://antidote-api-backend-placeholder-uc.a.run.app/antidote_callback
 
 # PubSub topic for flagged/toxic user (if a toxic user is flagged, a message will be sent here)
 export TF_VAR_PUBSUB_TOPIC_TOXIC=${TF_VAR_GCP_PROJECT_ID}-antidote-toxic-topic
@@ -71,31 +72,35 @@ export TF_VAR_PUBSUB_TOPIC_TOXIC=${TF_VAR_GCP_PROJECT_ID}-antidote-toxic-topic
 ######################################################
 
 # API Backend App Parameters
-export TF_VAR_APP_CLOUD_RUN_NAME=api-backend
-export TF_VAR_APP_CLOUD_RUN_REGION=us-central1
+export TF_VAR_APP_CLOUD_RUN_NAME=antidote-api-backend
+export TF_VAR_APP_CLOUD_RUN_REGION=${TF_VAR_GCP_REGION}
 
 # API Endpoint Parameters
-export TF_VAR_ENDPOINTS_CLOUD_RUN_NAME=api-endpoint
-export TF_VAR_ENDPOINTS_CLOUD_RUN_REGION=us-central1
+export TF_VAR_ENDPOINTS_CLOUD_RUN_NAME=antidote-api-endpoint
+export TF_VAR_ENDPOINTS_CLOUD_RUN_REGION=${TF_VAR_GCP_REGION}
 
 ######################################################
 # BigQuery
 ######################################################
 
-# Locations such as US, EU, us-central1, europe-west1, etc
+# BigQuery locations such as US, EU, us-central1, europe-west1, etc.
+# Reference: https://cloud.google.com/bigquery/docs/locations
 export TF_VAR_BIGQUERY_LOCATION=US
 export TF_VAR_BIGQUERY_DATASET=antidote
 export TF_VAR_BIGQUERY_TABLE=scored_chats
 
 ######################################################
-# Google Dataflow (and Scoring Engine configs)
+# Google Dataflow (Scoring Engine configs)
 ######################################################
 
 # Dataflow Region
 export TF_VAR_DATAFLOW_REGION=${TF_VAR_GCP_REGION}
 
-# Dataflow Runner (typically DataflowRunner or DirectRunner)
+# Dataflow Runner (typically DataflowRunner, or DirectRunner for local testing/deployment)
 export TF_VAR_DATAFLOW_RUNNER=DataflowRunner
+
+# Max Dataflow workers 
+export TF_VAR_MAX_DATAFLOW_WORKERS=2
 
 # Scoring engine time window settings
 # Toxic scores are aggregated based on the time window parameters, set below.

@@ -14,7 +14,6 @@
 
   <p align="center">
      OSS framework for orchestrating the detection of disruptive behavior in video games
-  
   </p>
 </p>
 
@@ -66,15 +65,17 @@ These components make up the solution architecture:
 
 **1. Collectors**
 
-The collectors are modular comments used to integrate with 3rd party services such as 3rd party chat or voice services. The focus is to build up a pluggable repo of modules that connect to various services as well as general modules that listen for UDP or TCP traffic (as an example). Collectors will be build and open sourced based on demand.
+Collectors are modular components that are used to capture and route data, such as text, audio, or gameplay data, from 3rd party services into the Antidote framework. The objective is to build up a pluggable repo of modules that connect to various services as well as generalized collectors that listen for standard UDP or TCP traffic (as an example). Collectors will be built and open sourced based on demand.
 
-**2. Endpoint**
+**2. API Endpoints**
 
-Antidote contains an Endpoint that allows chats and audio files to be analyzed via REST. Example API calls can be found [here](./components/endpoint/app_python/test.sh).
+Antidote contains an an API Endpoint, that works with ESPv2 for OpenAPI. These API Endpoints allow chats and audio files to be passed into the Antidote framework through a secure, monitored service. The component is based on [Google Cloud Endpoints with ESPv2](https://cloud.google.com/endpoints/docs/openapi/tutorials).
 
 **3. Scoring Engine**
 
-The objective of the Scoring Engine is to analyze, score, and flag toxic or disruptive behavior. It is based on a serverless design pattern, so that it scales to meet varying data traffic patterns. The Scoring Engine is a hydrid model based on a swappable ML model plus heuristic rules to bias or set business specific thresholds.
+The Scoring Engine is based on Apache Beam, which enables an open source, unified model for defining both batch and streaming data processing pipelines. The objective of the Scoring Engine is to analyze, score, and flag toxic or disruptive behavior. It is based on a serverless design pattern, which allows the service to scale to meet varying data traffic patterns and demand. A unique feature of this deployment, is The Scoring Engine is a hydrid model based on a swappable ML model plus heuristic rules to bias or set business specific thresholds. [Google Cloud Dataflow](https://cloud.google.com/dataflow/docs/concepts), which is a managed service for Apache Beam, is used to deploy and scale the Scoring Engine.
+
+
 
 **4. Cloud Functions**
 

@@ -1,12 +1,9 @@
 # Load Config
 include ./config.default
 
-.PHONY: help gcloud deploy-all enable-gcp-apis terraform-init terraform-deploy
+.PHONY: help gcloud deploy-all terraform-init terraform-apply
 
 help:
-	@echo ""
-	@echo "Enable GCP APIs"
-	@echo "    make enable-gcp-apis"
 	@echo ""
 	@echo "Initialize Terraform"
 	@echo "    make terraform-init"
@@ -21,24 +18,13 @@ help:
 	@echo "    make deploy-endpoints"
 	@echo ""
 
-deploy-all: enable-gcp-apis terraform-init terraform-deploy deploy-scoring-engine deploy-endpoints
-
-enable-gcp-apis:
-	gcloud services enable storage.googleapis.com \
-	cloudfunctions.googleapis.com \
-	run.googleapis.com \
-	container.googleapis.com \
-	containerregistry.googleapis.com \
-	artifactregistry.googleapis.com \
-	cloudbuild.googleapis.com \
-	dataflow.googleapis.com \
-	speech.googleapis.com
+deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
 
 terraform-init:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	terraform init
 
-terraform-deploy:
+terraform-apply:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	terraform apply
 
@@ -49,12 +35,10 @@ initialize-artifactregistry:
 	--description="Antidote Repo"
 
 deploy-scoring-engine:
-	@# Deploy Antidote Chat Scoring Engine
-	@# The scoring engine accepts JSON input with a
-	@# key called "text" as the text field. All other
-	@# json fields will be passed through the pipeline as well, 
-	@# but not transformed/touched in anyway.
-	python3 ./components/scoring_engine/main.py \
+	@echo "Building Python dependencies for Scoring Logic/ML model"
+	@cd ./components/scoring_engine && python3 setup.py sdist && cd ../..
+	@echo "Deploy Antidote Scoring Engine"
+	@nohup python3 ./components/scoring_engine/main.py \
 		--gcp_project ${TF_VAR_GCP_PROJECT_ID} \
 		--region ${TF_VAR_DATAFLOW_REGION} \
 		--job_name 'antidote-scoring-engine' \
@@ -70,7 +54,11 @@ deploy-scoring-engine:
 		--window_sliding_seconds ${TF_VAR_WINDOW_SLIDING_SECONDS} \
 		--runner ${TF_VAR_DATAFLOW_RUNNER} \
 		--no_use_public_ips \
-		--subnetwork "regions/${TF_VAR_DATAFLOW_REGION}/subnetworks/dataflow-subnet"
+		--subnetwork "regions/${TF_VAR_DATAFLOW_REGION}/subnetworks/dataflow-subnet" \
+		--extra_package ./components/scoring_engine/dist/scoring_logic-0.1.tar.gz \
+		--toxic_user_threshold ${TF_VAR_TOXIC_USER_THRESHOLD} \
+		--perspective_apikey ${TF_VAR_PERSPECTIVE_API_KEY} \
+		&
 
 deploy-endpoints:
 	@echo "[ INFO ] Deploy endpoint backend app"
