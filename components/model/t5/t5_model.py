@@ -67,6 +67,7 @@ class T5Model(object)
 			ds = ds.map(lambda x: dict(x))
 		return ds
 
+ ## TODO: Edit Task from Comment_text placeholder to appropriate task
   def preprocess(ds):
   	''' Con vert TF Dataset into a text-to-text format for T5'''
   	def normalize_text(text):

@@ -1,4 +1,5 @@
 # Copyright 2021 Google LLC
+# Note: T5 Model Still Under Work. Needs a Better Distributed Strategy (Heavily Resource Intesnive)
 
 import os 
 import logging
