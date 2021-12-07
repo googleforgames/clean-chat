@@ -33,7 +33,7 @@ class T5Model(object)
 		self.BASE_DIR = base_directory #@param { type: "string" }
 		if not BASE_DIR:
   		raise ValueError("You must enter a BASE_DIR.")
-  	self.training_data_dir = os.path.join(self.BASE_DIR, "data")
+  	self.training_data = os.path.join(self.BASE_DIR, "data")
   	self.model_dir = os.path.join(self.BASE_DIR, "models")
   	self.TPU_TOPOLOGY = "v2-8"
   	self.MODEL_SIZE = model_size
@@ -53,23 +53,19 @@ class T5Model(object)
   	tf.get_logger().propagate = False
   	py_logging.root.setLevel('INFO')
 
-## TODO: Model pre-processing for toxicity 
 	def load(**kwargs):
  		'''
  		Loads lines from text files 
  		Output: {'comment': b'you are terrible', 'rating': b'0.87'}
 
  		'''
- 		ds = tf.data.TextLineDataset(self.training_data_dir)
- 		# Split each "<comment>,<rating>" example into (comment, rating) tuple.
-  	ds = ds.map(
-      	functools.partial(tf.io.decode_csv, record_defaults=["", ""],
-        	                field_delim=",", use_quote_delim=False),
-      	num_parallel_calls=tf.data.experimental.AUTOTUNE)
-  	# Map each tuple to a {"comment": ... "rating": ...} dict.
-  	ds = ds.map(lambda *ex: dict(zip(["comment", "rating"], ex)))
-  	return ds
 
+ 		if self.training_data.endswith('.txt'):
+			ds = tf.data.TextLineDataset(self.training_data)
+		elif: self.training_data.endswith('.csv'):
+			ds = tf.data.experimental.make_csv_dataset(file_pattern = "*.csv" ,batch_size=1)
+			ds = ds.map(lambda x: dict(x))
+		return ds
 
   def preprocess(ds):
   	''' Con vert TF Dataset into a text-to-text format for T5'''
