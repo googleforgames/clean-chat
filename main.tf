@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Run:
-// terraform apply -var project="<YOUR_GCP_ProjectID>"
-
-// TODO: 
-//      Add unauthorized access for Cloud Functions
-
 terraform {
   required_providers {
     google = {
@@ -49,7 +43,8 @@ variable "gcp_service_list" {
 	"artifactregistry.googleapis.com",
 	"cloudbuild.googleapis.com",
 	"dataflow.googleapis.com",
-	"speech.googleapis.com"
+	"speech.googleapis.com",
+    "commentanalyzer.googleapis.com"
   ]
 }
 
@@ -57,6 +52,22 @@ resource "google_project_service" "gcp_services" {
   for_each = toset(var.gcp_service_list)
   project = "${var.GCP_PROJECT_ID}"
   service = each.key
+}
+
+/******************************************************
+
+Google Artifact Repository
+
+*******************************************************/
+
+resource "google_artifact_registry_repository" "antidote-repo" {
+  provider = google-beta
+
+  repository_id = "${var.GCP_ARTIFACT_REGISTRY_NAME}"
+  location = "${var.GCP_ARTIFACT_REGISTRY_REGION}"
+  
+  description = "Antidote Docker Repository"
+  format = "DOCKER"
 }
 
 /******************************************************
