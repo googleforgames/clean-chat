@@ -9,7 +9,7 @@ help:
 	@echo "    make terraform-init"
 	@echo ""
 	@echo "Terraform Apply"
-	@echo "    make terraform-deploy"
+	@echo "    make terraform-apply"
 	@echo ""
 	@echo "Deploy realtime Scoring Engine"
 	@echo "    make deploy-scoring-engine"
@@ -27,12 +27,6 @@ terraform-init:
 terraform-apply:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	terraform apply
-
-initialize-artifactregistry:
-	-gcloud artifacts repositories create ${TF_VAR_GCP_ARTIFACT_REGISTRY_NAME} \
-	--repository-format=docker \
-	--location=${TF_VAR_GCP_ARTIFACT_REGISTRY_REGION} \
-	--description="Antidote Repo"
 
 deploy-scoring-engine:
 	@echo "Building Python dependencies for Scoring Logic/ML model"

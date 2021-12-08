@@ -8,7 +8,7 @@
 #  Where it makes sense, code has been added
 #  to dynamically set variable values, but these 
 #  can all be overridden by adding in your own values 
-#  within this file. 
+#  within this file.
 #
 #  NOTE: The "TF_VAR_" prefix is used so that terraform
 #  can dynamically load these env variables.
@@ -105,11 +105,14 @@ export TF_VAR_MAX_DATAFLOW_WORKERS=2
 # Scoring engine time window settings
 # Toxic scores are aggregated based on the time window parameters, set below.
 # Window duration (in seconds) is the time window that the aggregation is applied to.  
-# Example: If the WINDOW_DURATION_SECONDS=30, then scores will be aggregated for a 30 second time period.
+# Example: If the TF_VAR_WINDOW_DURATION_SECONDS=30, then scores will be aggregated 
+# for a 30 second time period.
 # https://beam.apache.org/documentation/programming-guide/#sliding-time-windows 
 export TF_VAR_WINDOW_DURATION_SECONDS=30
 
-# Window sliding is a parameter used to determine when the a new window starts
+# Window sliding (in seconds) is a parameter used to determine how often a new window starts
+# Example: If the TF_VAR_WINDOW_SLIDING_SECONDS=5, then scores will be calculated across the 
+# window at 5 second intervals. 
 # https://beam.apache.org/documentation/programming-guide/#sliding-time-windows 
 export TF_VAR_WINDOW_SLIDING_SECONDS=5
 
@@ -124,15 +127,15 @@ export TF_VAR_TOXIC_USER_THRESHOLD=0.60
 export TF_VAR_ML_CLUSTER=${TF_VAR_GCP_PROJECT_ID}-antidote-pipeline-cluster
 
 # GKE zone
-export TF_VAR_ML_ZONE=us-west1-a
+export TF_VAR_ML_ZONE=${TF_VAR_GCP_REGION}
 
 # GKE machine type
 export TF_VAR_ML_MACHINE_TYPE=n1-standard-2
 
 # Additional ML Pipeline Configs
 export TF_VAR_ML_SCOPES=cloud-platform
-export TF_VAR_ML_APP_INSTANCE_NAME=${TF_VAR_GCP_PROJECT_ID}-antidote-pipeline
-export TF_VAR_ML_NAMESPACE=ml-namespace
+export TF_VAR_ML_APP_INSTANCE_NAME=${TF_VAR_GCP_PROJECT_ID}-antidote-ml-pipeline
+export TF_VAR_ML_NAMESPACE=antidote-ml-namespace
 export TF_VAR_MARKETPLACE_TOOLS_TAG=remove-ui-ownerrefs
 export TF_VAR_MARKETPLACE_TOOLS_IMAGE=gcr.io/cloud-marketplace-staging/marketplace-k8s-app-tools/k8s/dev
 
