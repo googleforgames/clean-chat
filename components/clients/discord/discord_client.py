@@ -2,14 +2,12 @@ import os,sys
 import json
 import time
 import argparse
-import discord
+import discord # discord.py==1.7.3
 import random
 from google.cloud import pubsub_v1 # google-cloud-pubsub==2.7.0
 
-
 if len(sys.argv)<=1:
-    print('\nUsage Example:\npython3 discord_client.py --gcp_project_id globalgame --pubsub_topic_id globalgame-antidote-text-input --discord_token $DISCORD_TOKEN\n')
-
+    print('\nUsage Example:\npython3 discord_client.py --gcp_project_id $GCP_PROJECT_ID --pubsub_topic_id $PUBSUB_TOPIC_ID --discord_token $DISCORD_TOKEN\n')
 
 def write_to_pubsub(publisher_client, project_id, topic_id, json_payload):
     try:
@@ -22,7 +20,6 @@ def write_to_pubsub(publisher_client, project_id, topic_id, json_payload):
         print(f'[ INFO ] Published message to {topic_path}.')
     except Exception as e:
         print(f'[ EXCEPTION ] {e}')
-
 
 if __name__ == "__main__":
     
