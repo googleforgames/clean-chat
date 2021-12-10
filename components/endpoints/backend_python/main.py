@@ -21,28 +21,16 @@ gcs_bucket_audio_long  = os.environ['TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_LONG']
 gcs_bucket_text        = os.environ['TF_VAR_GCS_BUCKET_TEXT_DROPZONE']
 pubsub_topic           = os.environ['TF_VAR_PUBSUB_TOPIC_TEXT_INPUT']
 
-print(f"[ DEBUG ] project_id:              {project_id}")
-print(f"[ DEBUG ] gcs_bucket_audio_short:  {gcs_bucket_audio_short}")
-print(f"[ DEBUG ] gcs_bucket_audio_long:   {gcs_bucket_audio_long}")
-print(f"[ DEBUG ] gcs_bucket_text:         {gcs_bucket_text}")
-print(f"[ DEBUG ] pubsub_topic:            {pubsub_topic}")
-
+# Ensure that ENV variables do not have extra quotes
 project_id             = project_id.replace('"','')
 gcs_bucket_audio_short = gcs_bucket_audio_short.replace('"','')
 gcs_bucket_audio_long  = gcs_bucket_audio_long.replace('"','')
 gcs_bucket_text        = gcs_bucket_text.replace('"','')
 pubsub_topic           = pubsub_topic.replace('"','')
 
-print(f"[ DEBUG ] project_id:              {project_id}")
-print(f"[ DEBUG ] gcs_bucket_audio_short:  {gcs_bucket_audio_short}")
-print(f"[ DEBUG ] gcs_bucket_audio_long:   {gcs_bucket_audio_long}")
-print(f"[ DEBUG ] gcs_bucket_text:         {gcs_bucket_text}")
-print(f"[ DEBUG ] pubsub_topic:            {pubsub_topic}")
-
-# Initialize clients
+# Initialize Clients
 speech_client    = speech.SpeechClient()
 pubsub_publisher = pubsub_v1.PublisherClient()
-
 
 def gcp_storage_upload_string(source_string, bucket_name, blob_name):
     print(f'[ DEBUG ] gcp_storage_upload_string received {bucket_name} and {blob_name}')
@@ -55,7 +43,6 @@ def gcp_storage_upload_string(source_string, bucket_name, blob_name):
     except Exception as e:
         print(f'[ ERROR ] gcp_storage_upload_string.Failed to upload to GCS. {e}')
 
-
 def gcp_storage_upload_filename(filename, bucket_name, blob_name):
     print(f'[ DEBUG ] gcp_storage_upload_string received {bucket_name} and {blob_name}')
     try:
@@ -66,7 +53,6 @@ def gcp_storage_upload_filename(filename, bucket_name, blob_name):
         print(f'[ INFO ] Uploaded file {blob_name} to GCS bucket {bucket_name}')
     except Exception as e:
         print(f'[ ERROR ] gcp_storage_upload_filename. Failed to upload to GCS. {e}')
-
 
 def speech_to_text_short(gcs_uri):
     '''
@@ -88,14 +74,12 @@ def speech_to_text_short(gcs_uri):
     
     return sentences
 
-
 def pubsub_callback( message_future ):
     # When timeout is unspecified, the exception method waits indefinitely.
     if message_future.exception(timeout=30):
         print('[ ERROR ] Publishing message on {} threw an Exception {}.'.format(topic_name, message_future.exception()))
     else:
         print('[ INFO ] Result: {}'.format(message_future.result()))
-
 
 def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
     '''
@@ -125,7 +109,6 @@ def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
     except Exception as e:
         print('[ ERROR ] {}'.format(e))
 
-
 def download_online_file(response, saved_filename):
     '''
     "response" comes from requests.get or request.post response
@@ -140,7 +123,6 @@ def download_online_file(response, saved_filename):
     
     return None
 
-
 def get_audio_duration(audio_file):
     try:
         with audioread.audio_open(audio_file) as f:
@@ -150,7 +132,6 @@ def get_audio_duration(audio_file):
     except Exception as e:
         print(f'[ EXCEPTION ] At get_audio_duration. {e}')
         return None
-
 
 def generate_filename(url):
     try:
@@ -174,11 +155,18 @@ def generate_filename(url):
 def audio():
     if request.method == 'POST':
         try:
+            '''# Payload should look like this
+            {
+                'timestamp': 1639163163,
+                'username':  'user123',
+                'audio_uri': 'https://mypath/audio.wav',
+            }
+            '''
             payload   = request.get_json()
             audio_uri = payload['audio_uri']
             print(f'''[ INFO ] User-provided payload: {payload}''')
             
-            print(f'[ DEBUG ] /audio requesting audio file from {audio_uri}')
+            print(f'[ INFO ] /audio requesting audio file from {audio_uri}')
             response = requests.get(audio_uri)
             print(f'[ INFO ] Requested audio file. Status code: {response.status_code}')
             
@@ -199,16 +187,16 @@ def audio():
                     else:
                         bucket_name = gcs_bucket_audio_long
                     
-                    print(f"[ DEBUG ] bucket_name:  {bucket_name}")
+                    print(f"[ INFO ] bucket_name:  {bucket_name}")
                     
                     # Upload raw (initial) audio file
-                    print(f'[ DEBUG ] Processing audio file called  {audio_filename}')
+                    print(f'[ INFO ] Processing audio file called  {audio_filename}')
                     gcp_storage_upload_string(response.content, bucket_name=bucket_name, blob_name=audio_filename)
                     # Convert mp3 to flac
                     audio_filename_flac = re.sub('\.[a-z0-9]+$','.flac',audio_filename.lower())
-                    print(f'[ DEBUG ] Running {audio_filename} through FFMPEG to generate {audio_filename_flac}')
+                    print(f'[ INFO ] Running {audio_filename} through FFMPEG to generate {audio_filename_flac}')
                     subprocess.call(['ffmpeg', '-i', audio_filename, '-ac', '1', audio_filename_flac])
-                    print(f'[ DEBUG ] Uploading processed audio file {audio_filename_flac} (as flac) to gs://{bucket_name}')
+                    print(f'[ INFO ] Uploading processed audio file {audio_filename_flac} (as flac) to gs://{bucket_name}')
                     gcp_storage_upload_filename(filename=audio_filename_flac, bucket_name=bucket_name, blob_name=audio_filename_flac)
                     
                     # GCS Path
@@ -216,7 +204,7 @@ def audio():
                     
                     # Write audio payload/metadata to GCS
                     audio_payload_filename = re.sub('\.[a-z0-9]+$', '.json', audio_filename)
-                    print(f'[ DEBUG ] Writing {audio_payload_filename} to GCS')
+                    print(f'[ INFO ] Writing {audio_payload_filename} to GCS')
                     gcp_storage_upload_string(json.dumps(payload), bucket_name=bucket_name, blob_name=audio_payload_filename)
                     
                     # Return Status
@@ -236,18 +224,19 @@ def audio():
                 print(f'''[ ERROR ] {msg}''')
                 return msg, response.status_code
         except Exception as e:
-            return f'{e}', 400
+            print(f'[ EXCEPTION ] At /audio. {e}')
+            return '', 401
 
 
 @app.route("/chat", methods = ['POST'])
 def chat():
     if request.method == 'POST':
         try:
-            ''' Excepting a payload like this
+            '''# Payload should look like this
             {
-                'timestamp': unix_timestamp,
-                'username':  username,
-                'text':      text_message,
+                'timestamp': 1639163163,
+                'username':  'user123',
+                'text':      'test text message',
             }
             '''
             payload = request.get_json()
@@ -263,8 +252,8 @@ def chat():
             #pubsub_publish( pubsub_publisher, project_id=project_id, pubsub_topic=pubsub_topic, message=payload )
             return 'Success', 201
         except Exception as e:
-            print(f'[ EXCEPTION ] At antidote_callback. {e}')
-            return '', 400
+            print(f'[ EXCEPTION ] At /chat. {e}')
+            return '', 401
 
 
 @app.route("/test", methods = ['GET'])
@@ -278,16 +267,16 @@ def antidote_callback():
         try:
             print('[ INFO ] Starting Antidote Callback')
             payload = request.get_json()
-            print(f'[ DEBUG ] antidote_callback payload: {payload}')
+            print(f'[ INFO ] antidote_callback payload: {payload}')
             
             payload_decoded = json.loads(base64.b64decode(payload['message']['data']).decode('utf-8'))
             callback_url = payload_decoded['callback_url']
             r = requests.post(callback_url, json=payload_decoded)
-            
+            print(f'[ INFO ] Status code from callback_url: {r.status_code}')
             return 'Success', 201
         except Exception as e:
-            print(f'[ EXCEPTION ] At antidote_callback. {e}')
-            return 'Bad Request', 400
+            print(f'[ EXCEPTION ] At /antidote_callback. {e}')
+            return 'Bad Request', 401
 
 
 if __name__ == "__main__":

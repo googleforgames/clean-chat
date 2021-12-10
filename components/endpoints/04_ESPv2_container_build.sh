@@ -1,6 +1,4 @@
-# Load Configs
-#. ../../config
-
+# Set Script Directory
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # Get Cloud Run URL and Hostname

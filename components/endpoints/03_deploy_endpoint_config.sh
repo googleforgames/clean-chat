@@ -1,6 +1,4 @@
-# Load Configs
-#. ../../../config.default
-
+# Set Script Directory
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # Get Cloud Run URL and Hostname
@@ -21,4 +19,4 @@ gcloud endpoints services deploy "$SCRIPT_DIR/openapi-run.yaml" \
     --project $TF_VAR_GCP_PROJECT_ID
 
 # Cleanup file - remove openapi-run.yaml
-#rm openapi-run.yaml
+rm openapi-run.yaml

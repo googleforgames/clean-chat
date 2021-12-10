@@ -1,7 +1,3 @@
-# Load Configs
-
-#. ../../../config.default
-
 # Set Container Repo Tag (based on previous ESPv2_container_build step)
 CONTAINER_REPO_TAG=$(gcloud container images list-tags gcr.io/$TF_VAR_GCP_PROJECT_ID/endpoints-runtime-serverless --format "value(tags)" | grep $TF_VAR_ENDPOINTS_CLOUD_RUN_NAME | head -1)
 
