@@ -55,6 +55,8 @@ deploy-scoring-engine:
 		&
 
 deploy-endpoints:
+	@echo "[ INFO ] Set static outbound IP address for Callback URL with VPC Access connector and NAT Gateway"
+	./components/networking/static-outbound.sh
 	@echo "[ INFO ] Deploy endpoint backend app"
 	./components/endpoints/backend_python/deploy_cloud_run_for_backend.sh
 	@echo "[ INFO ] Deploy endpoint cloud run instance (temporary deployment to get URL)"

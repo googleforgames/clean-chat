@@ -11,10 +11,14 @@
 ###################################################
 
 variable "GCP_PROJECT_ID" { 
-    default = ""
+    default = null
 }
 
 variable "GCP_REGION" { 
+    default = ""
+}
+
+variable "PERSPECTIVE_API_KEY" { 
     default = ""
 }
 

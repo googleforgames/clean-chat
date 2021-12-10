@@ -44,7 +44,7 @@ variable "gcp_service_list" {
 	"cloudbuild.googleapis.com",
 	"dataflow.googleapis.com",
 	"speech.googleapis.com",
-    "commentanalyzer.googleapis.com"
+    "vpcaccess.googleapis.com"
   ]
 }
 
@@ -52,6 +52,13 @@ resource "google_project_service" "gcp_services" {
   for_each = toset(var.gcp_service_list)
   project = "${var.GCP_PROJECT_ID}"
   service = each.key
+}
+
+# Enable Perspective API if condition is met
+resource "google_project_service" "perspective_api" {
+  count = var.PERSPECTIVE_API_KEY!="" ? 1 : 0
+  project = "${var.GCP_PROJECT_ID}"
+  service = "commentanalyzer.googleapis.com"
 }
 
 /******************************************************
