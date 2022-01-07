@@ -67,6 +67,39 @@ class T5Model(object)
 			ds = ds.map(lambda x: dict(x))
 		return ds
 
+## TODO - Test Function Over Above 
+def parse_csv(line, field_names=None, **kwargs):
+"""Splits CSV lines into dict examples mapping field name to string value.
+  Args:
+    line: an example containing a comma delimited string.
+    field_names: a list of strings, the ordered names of the TSV fields.
+      Defaults to "inputs" and "targets".
+  Returns:
+    A feature dict mapping field name to string value.
+  """
+  field_names= field_names 
+  return dict(
+      zip(field_names,
+          tf.io.decode_csv(
+              line,
+              record_defaults=[''] * len(field_names))))	
+
+
+## Edited toxicity preprocesser for binary classification
+## Add as preprocessor in seqio task 
+
+def preprocess_toxicity(data)
+
+	if tf.math.great_equal(data['target'], 0.85):
+		return 'toxic'
+	else: 
+		return 'non-toxic'
+
+## Apply above over imported dataset 
+dataset.map(preprocess_toxicity)
+
+
+
  ## TODO: Edit Task from Comment_text placeholder to appropriate task
   def preprocess(ds):
   	''' Con vert TF Dataset into a text-to-text format for T5'''
