@@ -32,7 +32,7 @@ Enable Google Cloud Services
 *******************************************************/
 
 variable "gcp_service_list" {
-  description ="The list of apis necessary for the project"
+  description ="The list of GCP APIs to enable"
   type = list(string)
   default = [
     "storage.googleapis.com",
@@ -51,6 +51,7 @@ resource "google_project_service" "gcp_services" {
   for_each = toset(var.gcp_service_list)
   project = "${var.GCP_PROJECT_ID}"
   service = each.key
+  disable_dependent_services = true
 }
 
 # Enable Perspective API if condition is met

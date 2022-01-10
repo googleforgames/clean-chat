@@ -13,11 +13,14 @@
 # limitations under the License.
 
 # Load Config
-include ./config.default
+include ./config
 
 .PHONY: help gcloud deploy-all terraform-init terraform-apply
 
 help:
+	@echo ""
+	@echo "Enable GCP APIs"
+	@echo "    make enable-gcp-apis"
 	@echo ""
 	@echo "Initialize Terraform"
 	@echo "    make terraform-init"
