@@ -50,9 +50,9 @@
 <!-- PROJECT OVERVIEW -->
 ## Project Overview
 
-Antidote is an anti-toxicity, anti-cheat solution that makes games more enjoyable and inclusive for all.
+Antidote is an anti-toxicity framework that helps to make games more enjoyable and inclusive for all.
 
-Toxic behavior, content, and players exist in all games. Therefore it’s very important to regulate toxicity in the gaming industry to maintain the quality game experience that players will want to stay in.
+Toxicity exists in many forms across all online games. Therefore, it’s important to regulate toxicity in the gaming industry to maintain the quality game experience that players will want to stay in.
 
 Toxic behavior is becoming a large problem for online communities. Existing solutions are failing to stay relevant and stay fair.
 
@@ -60,28 +60,26 @@ Antidote is a globally scalable solution to detect and flag toxic or disruptive 
 
 This gaming solution offers a configurable framework for analyzing chat/text messages and audio.
 
+**What Antidoe is not**
+
+Antidote is not a specific model for detecting toxicity. It is a <i>framework</i> where users can train and deploy their own ML model or they can build upon our pre-trained base models. 
+
 
 These components make up the solution architecture:
 
-**1. Collectors**
-
-Collectors are modular components that are used to capture and route data, such as text, audio, or gameplay data, from 3rd party services into the Antidote framework. The objective is to build up a pluggable repo of modules that connect to various services as well as generalized collectors that listen for standard UDP or TCP traffic (as an example). Collectors will be built and open sourced based on demand.
-
-**2. API Endpoints**
+**1. API Endpoints**
 
 Antidote contains an an API Endpoint, that works with ESPv2 for OpenAPI. These API Endpoints allow chats and audio files to be passed into the Antidote framework through a secure, monitored service. The component is based on [Google Cloud Endpoints with ESPv2](https://cloud.google.com/endpoints/docs/openapi/tutorials).
+
+**2. Cloud Functions**
+
+Cloud Functions are used as part of this architecture to trigger serverless functions used as part of the event-driven pipeline. These functions are used for parsing data, performing quality checks, calling ML-based APIs (such as the Speech-to-text API), or a variety of other tasks. 
 
 **3. Scoring Engine**
 
 The Scoring Engine is based on Apache Beam, which enables an open source, unified model for defining both batch and streaming data processing pipelines. The objective of the Scoring Engine is to analyze, score, and flag toxic or disruptive behavior. It is based on a serverless design pattern, which allows the service to scale to meet varying data traffic patterns and demand. A unique feature of this deployment, is The Scoring Engine is a hydrid model based on a swappable ML model plus heuristic rules to bias or set business specific thresholds. [Google Cloud Dataflow](https://cloud.google.com/dataflow/docs/concepts), which is a managed service for Apache Beam, is used to deploy and scale the Scoring Engine.
 
-
-
-**4. Cloud Functions**
-
-Cloud Functions are used as part of this architecture to trigger serverless functions used as part of the event-driven pipeline. These functions are used for parsing data, performing quality checks, calling ML-based APIs (such as the Speech-to-text API), or a variety of other tasks. 
-
-**5. ML Model Pipeline**
+**4. ML Model Pipeline**
 
 The pipeline module orchestrates training and orchestration of the toxicity model. 
 
@@ -96,44 +94,53 @@ Follow these steps to config and lauch the Antidote framework:
 
 ### Installation
 
-1.  **Edit the [config](config)** file based on your GCP project, your naming convensions, and desired parameters. By editing the config file, you are able to refine how sensitive the scoring is, the duration of windowing (which is used to aggregate scores), and a variety of other GCP specific settings. Please see the [config](config) file for all parameter options as well as their associated descriptions. 
+1. Clone the repo.
+
+```
+git clone https://github.com/googleforgames/antidote.git
+```
+
+2. Make a copy of the [config.default](./config.default)
+
+```
+cp config.default config
+```
+
+3. Edit the config file 
+
+This file should be updated to reflect your GCP project ID, your naming convensions, and desired parameters. By editing the config file, you are able to customize how sensitive the scoring is, the duration of windowing (which is used to aggregate scores), and a variety of other GCP specific settings.
 
 ```
 vi config
 ```
 
-2.  **Initialize GCP Services**. This command will enable GCP APIs, create Cloud Storage buckets, create PubSub topics, Create BigQuery Datasets and Tables, etc. 
+4.  Initialize Terraform for deployment 
 
 ```
-make initialize-gcp
+make terraform-init
 ```
 
-3.  **Deploy Cloud Functions**
+5.  Deploy the GCP services, executing the actions proposed in a Terraform plan
 
 ```
-make deploy-cloud-functions
+make terraform-apply
 ```
 
-4.  **Deploy the Endpoint Backend** (deployed on Cloud Run)
-
-```
-make deploy-endpoint-backend
-```
-
-5.  **Deploy the Scoring Engine** (the scoring engine runs on Google Cloud Dataflow)
+6.  Deploy the Scoring Engine (the scoring engine runs on Google Cloud Dataflow)
 
 ```
 make deploy-scoring-engine
 ```
 
+7.  Deploy the Endpoint Backend
+
+```
+make deploy-endpoint-backend
+```
 
 ### Run the Demo
 
-There are currently two ways to score toxicity, both which can be demoed. The demos include: 
-
-1) Run a chat/text message client that allows a user to enter text and each text message will be scored for toxic language.  that processes text entered by a user and scores each message. In production, a chat client can be launched in order to forward all chat messages into GCP (via PubSub).
-
-2) Run an audio file demo that analyzes a user audio file that is dropped in a Cloud Storage bucket. In production, files can be programically uploaded into the specified Cloud Storage bucket when a match ends or at a scheduled time for batch scoring.
+There are currently two ways to score toxicity, both which can be demoed/tested. The demos include: 
 
 ```
 # Option #1
@@ -148,6 +155,7 @@ cd ./setup
 cd ./setup
 ./10-demo-audio-stt.sh
 ```
+
 ## Machine Learning Pipeline
 
 This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently utilizes the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model. 

@@ -1,3 +1,17 @@
+# Copyright 2022 Google LLC All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Load Config
 include ./config.default
 
@@ -20,6 +34,20 @@ help:
 
 deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
 
+# APIs should be enabled as part of the Terraform deployment. 
+# This make target can be used to enable all required GCP APIs.
+enable-gcp-apis:
+	gcloud services enable \
+	storage.googleapis.com \
+	cloudfunctions.googleapis.com \
+	run.googleapis.com \
+	container.googleapis.com \
+	containerregistry.googleapis.com \
+	artifactregistry.googleapis.com \
+	cloudbuild.googleapis.com \
+	dataflow.googleapis.com \
+	speech.googleapis.com
+
 terraform-init:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	terraform init
@@ -31,7 +59,7 @@ terraform-apply:
 deploy-scoring-engine:
 	@echo "Building Python dependencies for Scoring Logic/ML model"
 	@cd ./components/scoring_engine && python3 setup.py sdist && cd ../..
-	@echo "Deploy Antidote Scoring Engine"
+	@echo "Deploying Antidote Scoring Engine"
 	@nohup python3 ./components/scoring_engine/main.py \
 		--gcp_project ${TF_VAR_GCP_PROJECT_ID} \
 		--region ${TF_VAR_DATAFLOW_REGION} \
@@ -53,6 +81,31 @@ deploy-scoring-engine:
 		--toxic_user_threshold ${TF_VAR_TOXIC_USER_THRESHOLD} \
 		--perspective_apikey ${TF_VAR_PERSPECTIVE_API_KEY} \
 		&
+
+deploy-scoring-engine-interactive:
+	@echo "Building Python dependencies for Scoring Logic/ML model"
+	@cd ./components/scoring_engine && python3 setup.py sdist && cd ../..
+	@echo "Deploying Antidote Scoring Engine"
+	@python3 ./components/scoring_engine/main.py \
+		--gcp_project ${TF_VAR_GCP_PROJECT_ID} \
+		--region ${TF_VAR_DATAFLOW_REGION} \
+		--job_name 'antidote-scoring-engine' \
+		--gcp_staging_location "gs://${TF_VAR_GCS_BUCKET_DATAFLOW}/staging" \
+		--gcp_tmp_location "gs://${TF_VAR_GCS_BUCKET_DATAFLOW}/tmp" \
+		--batch_size 10 \
+		--pubsub_topic_text_input projects/${TF_VAR_GCP_PROJECT_ID}/topics/${TF_VAR_PUBSUB_TOPIC_TEXT_INPUT} \
+		--pubsub_topic_text_scored projects/${TF_VAR_GCP_PROJECT_ID}/topics/${TF_VAR_PUBSUB_TOPIC_TEXT_SCORED} \
+		--pubsub_topic_toxic projects/${TF_VAR_GCP_PROJECT_ID}/topics/${TF_VAR_PUBSUB_TOPIC_TOXIC} \
+		--bq_dataset_name ${TF_VAR_BIGQUERY_DATASET} \
+		--bq_table_name ${TF_VAR_BIGQUERY_TABLE} \
+		--window_duration_seconds ${TF_VAR_WINDOW_DURATION_SECONDS} \
+		--window_sliding_seconds ${TF_VAR_WINDOW_SLIDING_SECONDS} \
+		--runner DirectRunner \
+		--no_use_public_ips \
+		--subnetwork "regions/${TF_VAR_DATAFLOW_REGION}/subnetworks/dataflow-subnet" \
+		--extra_package ./components/scoring_engine/dist/scoring_logic-0.1.tar.gz \
+		--toxic_user_threshold ${TF_VAR_TOXIC_USER_THRESHOLD} \
+		--perspective_apikey ${TF_VAR_PERSPECTIVE_API_KEY}
 
 deploy-endpoints:
 	#@echo "[ INFO ] Set static outbound IP address for Callback URL with VPC Access connector and NAT Gateway"
