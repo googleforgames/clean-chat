@@ -42,12 +42,12 @@ deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoint
 enable-gcp-apis:
 	gcloud services enable \
 	storage.googleapis.com \
-	cloudfunctions.googleapis.com \
-	run.googleapis.com \
-	container.googleapis.com \
 	containerregistry.googleapis.com \
 	artifactregistry.googleapis.com \
 	cloudbuild.googleapis.com \
+	cloudfunctions.googleapis.com \
+	container.googleapis.com \
+	run.googleapis.com \
 	dataflow.googleapis.com \
 	speech.googleapis.com
 
