@@ -1,12 +1,10 @@
-################################################################################################################
-#
-# Copyright 2022 Google LLC
+# Copyright 2022 Google LLC All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    https://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,34 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-################################################################################################################
-#
-#   Google Cloud Dataflow
-#
-#   References:
-#   https://cloud.google.com/dataflow/docs/
-#
-#   Usage:
-'''
-python main.py \
-    --gcp_project globalgame \
-    --region us-central1 \
-    --job_name 'antidote-scoring-engine' \
-    --gcp_staging_location "gs://globalgame-antidote-dataflow/staging" \
-    --gcp_tmp_location "gs://globalgame-antidote-dataflow/tmp" \
-    --batch_size 10 \
-    --pubsub_topic_text_input projects/globalgame/topics/ingest-text \
-    --pubsub_topic_text_scored projects/globalgame/topics/scored-text \
-    --pubsub_topic_toxic projects/globalgame/topics/toxic-user \
-    --bq_dataset_name antidote \
-    --bq_table_name scored_chats \
-    --window_duration_seconds 60 \
-    --window_sliding_seconds 5
-    --runner DirectRunner
-
-'''
-#
-################################################################################################################
+# Google Cloud Dataflow
+# References:
+# https://cloud.google.com/dataflow/docs/
 
 import os
 import logging
