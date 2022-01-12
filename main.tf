@@ -35,23 +35,23 @@ variable "gcp_service_list" {
   description ="The list of apis necessary for the project"
   type = list(string)
   default = [
+    "cloudfunctions.googleapis.com",
     "storage.googleapis.com",
-	"cloudfunctions.googleapis.com",
-	"run.googleapis.com",
-	"container.googleapis.com",
-	"containerregistry.googleapis.com",
-	"artifactregistry.googleapis.com",
-	"cloudbuild.googleapis.com",
-	"dataflow.googleapis.com",
-	"speech.googleapis.com"
+    "cloudbuild.googleapis.com",
+    "containerregistry.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "run.googleapis.com",
+    "container.googleapis.com",
+    "dataflow.googleapis.com",
+    "speech.googleapis.com"
   ]
 }
 
 resource "google_project_service" "gcp_services" {
   for_each = toset(var.gcp_service_list)
-  project = "${var.GCP_PROJECT_ID}"
-  disable_dependent_services = true
+  project = "fit-entity-333016"
   service = each.key
+  disable_dependent_services = true
 }
 
 # Enable Perspective API if condition is met
@@ -59,6 +59,7 @@ resource "google_project_service" "perspective_api" {
   count = var.PERSPECTIVE_API_KEY!="" ? 1 : 0
   project = "${var.GCP_PROJECT_ID}"
   service = "commentanalyzer.googleapis.com"
+  disable_dependent_services = true
 }
 
 /******************************************************

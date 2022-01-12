@@ -34,6 +34,9 @@ help:
 	@echo "Deploy API Endpoints"
 	@echo "    make deploy-endpoints"
 	@echo ""
+	@echo "Delete Services - Terraform Destroy"
+	@echo "    make terraform-destroy"
+	@echo ""
 
 deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
 
@@ -58,6 +61,10 @@ terraform-init:
 terraform-apply:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	terraform apply
+
+terraform-destroy:
+	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
+	terraform destroy
 
 deploy-scoring-engine:
 	@echo "Building Python dependencies for Scoring Logic/ML model"
