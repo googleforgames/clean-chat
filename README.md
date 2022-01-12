@@ -50,97 +50,89 @@
 <!-- PROJECT OVERVIEW -->
 ## Project Overview
 
-Antidote is an anti-toxicity framework that helps to make games more enjoyable and inclusive for all.
-
-Toxicity exists in many forms across all online games. Therefore, it’s important to regulate toxicity in the gaming industry to maintain the quality game experience that players will want to stay in.
-
-Toxic behavior is becoming a large problem for online communities. Existing solutions are failing to stay relevant and stay fair.
-
-Antidote is a globally scalable solution to detect and flag toxic or disruptive behavior. 
-
-This gaming solution offers a configurable framework for analyzing chat/text messages and audio.
+Antidote is an anti-toxicity framework that helps to make games more enjoyable and inclusive for all. Toxicity exists in many forms across all online games. Therefore, it’s important to regulate toxicity in the gaming industry to maintain the quality game experience that players will want to stay in. Toxic behavior is becoming a large problem for online communities. Existing solutions are failing to stay relevant and stay fair. Antidote is a globally scalable solution to detect and flag toxic or disruptive behavior. This gaming solution offers a configurable framework for analyzing chat/text messages and audio.
 
 **What Antidoe is not**
 
 Antidote is not a specific model for detecting toxicity. It is a <i>framework</i> where users can train and deploy their own ML model or they can build upon our pre-trained base models. 
 
+---
 
-These components make up the solution architecture:
+## Architecture Components:
 
 **1. API Endpoints**
 
-Antidote contains an an API Endpoint, that works with ESPv2 for OpenAPI. These API Endpoints allow chats and audio files to be passed into the Antidote framework through a secure, monitored service. The component is based on [Google Cloud Endpoints with ESPv2](https://cloud.google.com/endpoints/docs/openapi/tutorials).
+    Antidote contains an an API Endpoint, that works with ESPv2 for OpenAPI. These API Endpoints allow chats and audio files to be passed into the Antidote framework through a secure, monitored service. The component is based on [Google Cloud Endpoints with ESPv2](https://cloud.google.com/endpoints/docs/openapi/tutorials).
 
 **2. Cloud Functions**
 
-Cloud Functions are used as part of this architecture to trigger serverless functions used as part of the event-driven pipeline. These functions are used for parsing data, performing quality checks, calling ML-based APIs (such as the Speech-to-text API), or a variety of other tasks. 
+    Cloud Functions are used as part of this architecture to trigger serverless functions used as part of the event-driven pipeline. These functions are used for parsing data, performing quality checks, calling ML-based APIs (such as the Speech-to-text API), or a variety of other tasks. 
 
 **3. Scoring Engine**
 
-The Scoring Engine is based on Apache Beam, which enables an open source, unified model for defining both batch and streaming data processing pipelines. The objective of the Scoring Engine is to analyze, score, and flag toxic or disruptive behavior. It is based on a serverless design pattern, which allows the service to scale to meet varying data traffic patterns and demand. A unique feature of this deployment, is The Scoring Engine is a hydrid model based on a swappable ML model plus heuristic rules to bias or set business specific thresholds. [Google Cloud Dataflow](https://cloud.google.com/dataflow/docs/concepts), which is a managed service for Apache Beam, is used to deploy and scale the Scoring Engine.
+    The Scoring Engine is based on Apache Beam, which enables an open source, unified model for defining both batch and streaming data processing pipelines. The objective of the Scoring Engine is to analyze, score, and flag toxic or disruptive behavior. It is based on a serverless design pattern, which allows the service to scale to meet varying data traffic patterns and demand. A unique feature of this deployment, is The Scoring Engine is a hydrid model based on a swappable ML model plus heuristic rules to bias or set business specific thresholds. [Google Cloud Dataflow](https://cloud.google.com/dataflow/docs/concepts), which is a managed service for Apache Beam, is used to deploy and scale the Scoring Engine.
 
 **4. ML Model Pipeline**
 
-The pipeline module orchestrates training and orchestration of the toxicity model. 
+    The pipeline module orchestrates training and orchestration of the toxicity model. 
 
-#### Reference Architecture
-![Architecture](./assets/images/architecture_chat_and_audio_analysis.png)
+---
 
+## Reference Architecture
+![Architecture](./assets/images/reference_architecture.png)
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Follow these steps to config and lauch the Antidote framework:
+Follow these steps to config and deploy the Antidote framework:
 
-### Installation
+1. Clone the repo
 
-1. Clone the repo.
-
-```
-git clone https://github.com/googleforgames/antidote.git
-```
+    ```
+    git clone https://github.com/googleforgames/antidote.git
+    ```
 
 2. Make a copy of the [config.default](./config.default)
 
-```
-cp config.default config
-```
+    ```
+    cp config.default config
+    ```
 
 3. Edit the config file 
 
-This file should be updated to reflect your GCP project ID, your naming convensions, and desired parameters. By editing the config file, you are able to customize how sensitive the scoring is, the duration of windowing (which is used to aggregate scores), and a variety of other GCP specific settings.
+    This file should be updated to reflect your GCP project ID, your naming convensions, and desired parameters. By editing the config file, you are able to customize how sensitive the scoring is, the duration of windowing (which is used to aggregate scores), and a variety of other GCP specific settings.
 
-```
-vi config
-```
+    ```
+    vi config
+    ```
 
 4.  Initialize Terraform for deployment 
 
-```
-make terraform-init
-```
+    ```
+    make terraform-init
+    ```
 
 5.  Deploy the GCP services, executing the actions proposed in a Terraform plan
 
-```
-make terraform-apply
-```
+    ```
+    make terraform-apply
+    ```
 
 6.  Deploy the Scoring Engine (the scoring engine runs on Google Cloud Dataflow)
 
-```
-make deploy-scoring-engine
-```
+    ```
+    make deploy-scoring-engine
+    ```
 
 7.  Deploy the Endpoint Backend
 
-```
-make deploy-endpoint-backend
-```
+    ```
+    make deploy-endpoint-backend
+    ```
 
-### Run the Demo
+## Demo Examples
 
-There are currently two ways to score toxicity, both which can be demoed/tested. The demos include: 
+There are currently two ways to score toxicity, both which can be demoed & tested. The demo examples include: 
 
 ```
 # Option #1
