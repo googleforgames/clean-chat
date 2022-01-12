@@ -50,9 +50,10 @@
 <!-- PROJECT OVERVIEW -->
 ## Project Overview
 
-Antidote is an anti-toxicity framework that helps to make games more enjoyable and inclusive for all. Toxicity exists in many forms across all online games. Therefore, it’s important to regulate toxicity in the gaming industry to maintain the quality game experience that players will want to stay in. Toxic behavior is becoming a large problem for online communities. Existing solutions are failing to stay relevant and stay fair. Antidote is a globally scalable solution to detect and flag toxic or disruptive behavior. This gaming solution offers a configurable framework for analyzing chat/text messages and audio.
+Antidote is an open source solution to eliminate or mitigate toxic behavior in online multiplayer video games, with the goals of making games more enjoyable and inclusive for all. In large open multiplayer games, toxicity is rampant. Antidote provides the ability to proactively detect toxicity in voice and text chat, and provides scores to game moderation services or player support personnel. The project provides a globally scalable framework for training, deploying, and maintaining low-latency anti-toxicity models. . The framework comes pre-packaged with several machine learning 'base models' that allow you to train, or fine tune, the models to detect toxic speech in the vernacular of your game's players.
 
-**What Antidoe is not**
+
+**What Antidote Is Not**
 
 Antidote is not a specific model for detecting toxicity. It is a <i>framework</i> where users can train and deploy their own ML model or they can build upon our pre-trained base models. 
 
