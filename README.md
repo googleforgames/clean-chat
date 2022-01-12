@@ -62,9 +62,9 @@ Antidote is not a specific model for detecting toxicity. It is a <i>framework</i
 ## Architecture Components:
 
 Antidote’s design is divided into three main components: 
--The Scoring Engine: This is the online service that hosts the toxicity detection models, and conducts aggregation of the results. 
--Game Telemetry Intake: Antidote’s means of communicating with Game Servers and handling game telemetry data from them. Note - Antidote is specifically designed to work as a third-party service or sidecar to the game server, and does not directly communicate with the client itself
--ML Model Pipeline: A self-contained, ML-Ops driven framework for training, deploying, and maintaining toxicity models. The Model pipeline provides several options for base models, including both open source and Google Cloud Partner Models. 
+ - The Scoring Engine: This is the online service that hosts the toxicity detection models, and conducts aggregation of the results. 
+- Game Telemetry Intake: Antidote’s means of communicating with Game Servers and handling game telemetry data from them. Note - Antidote is specifically designed to work as a third-party service or sidecar to the game server, and does not directly communicate with the client itself
+- ML Model Pipeline: A self-contained, ML-Ops driven framework for training, deploying, and maintaining toxicity models. The Model pipeline provides several options for base models, including both open source and Google Cloud Partner Models. 
 
 **1. API Endpoints**
 
