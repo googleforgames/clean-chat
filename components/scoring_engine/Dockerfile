@@ -51,8 +51,8 @@ ENTRYPOINT python3 main.py \
 		--window_duration_seconds ${TF_VAR_WINDOW_DURATION_SECONDS} \
 		--window_sliding_seconds ${TF_VAR_WINDOW_SLIDING_SECONDS} \
 		--runner ${TF_VAR_DATAFLOW_RUNNER} \
-		--no_use_public_ips \
-		--subnetwork "regions/${TF_VAR_DATAFLOW_REGION}/subnetworks/dataflow-subnet" \
-		--extra_package ./components/scoring_engine/dist/scoring_logic-0.1.tar.gz \
+		#--no_use_public_ips \
+		#--subnetwork "regions/${TF_VAR_DATAFLOW_REGION}/subnetworks/dataflow-subnet" \
+		--extra_package ./dist/scoring_logic-0.1.tar.gz \
 		--toxic_user_threshold ${TF_VAR_TOXIC_USER_THRESHOLD} \
 		--perspective_apikey ${TF_VAR_PERSPECTIVE_API_KEY}

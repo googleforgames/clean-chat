@@ -31,8 +31,8 @@ echo "GCP_PROJECT_ID: $TF_VAR_GCP_PROJECT_ID"
 # Build scoring engine container
 docker build --tag scoring_engine . 
 
-# Deploy (interactive mode with DirectRunner)
-docker run -it --name scoring_engine \
+# Deploy to Dataflow
+docker run --name scoring_engine \
 --env TF_VAR_GCP_PROJECT_ID=$TF_VAR_GCP_PROJECT_ID \
 --env TF_VAR_DATAFLOW_REGION=$TF_VAR_DATAFLOW_REGION \
 --env TF_VAR_GCS_BUCKET_DATAFLOW=$TF_VAR_GCS_BUCKET_DATAFLOW \
