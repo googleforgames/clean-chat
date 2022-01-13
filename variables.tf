@@ -28,6 +28,10 @@ variable "GCP_PROJECT_ID" {
     default = null
 }
 
+variable "GCP_PROJECT_NUMBER" { 
+    default = null
+}
+
 variable "GCP_REGION" { 
     default = ""
 }

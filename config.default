@@ -36,6 +36,9 @@
 # GCP Project ID
 export TF_VAR_GCP_PROJECT_ID=<YOUR_GCP_PROJECT_ID>
 
+# GCP Project Number
+export TF_VAR_GCP_PROJECT_NUMBER=<YOUR_GCP_PROJECT_NUMBER>
+
 # GCP Region where the Antidote resources should be deployed. 
 export TF_VAR_GCP_REGION=us-central1
 

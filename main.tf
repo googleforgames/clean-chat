@@ -351,3 +351,34 @@ resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
   }
 
 }
+
+/******************************************************
+
+IAM Roles and Permissions
+
+*******************************************************/
+
+# Add Cloud Storage Object Admin to Dataflow Service Account
+resource "google_project_iam_member" "iam_for_dataflow_storage" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+}
+# Add Dataflow Admin permissions to Dataflow Service Account
+resource "google_project_iam_member" "iam_for_dataflow_admin" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/dataflow.admin"
+  member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+}
+# Add Dataflow Worker permissions to Dataflow Service Account
+resource "google_project_iam_member" "iam_for_dataflow_worker" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/dataflow.worker"
+  member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+}
+# Add PubSub Editor to Dataflow Service Account
+resource "google_project_iam_member" "iam_for_dataflow_pubsub" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/pubsub.editor"
+  member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+}
