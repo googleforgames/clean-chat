@@ -109,20 +109,20 @@ deploy-endpoints:
 	@echo "[ INFO ] Deploy endpoint cloud run instance"
 	./components/endpoints/05_ESPv2_container_deploy.sh
 
-create-pipeline-cluster:
-	gcloud auth configure-docker
-	gcloud container clusters create "$ML_CLUSTER" --zone "$ML_ZONE" --machine-type "$ML_MACHINE_TYPE" --scopes $ML_SCOPES
-	gcloud container clusters get-credentials "$ML_CLUSTER" --zone "$ML_ZONE"
-	kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
-	kubectl create clusterrolebinding cluster-admin-binding --clusterrole cluster-admin --user $(gcloud config get-value account)
-	kubectl create namespace $ML_NAMESPACE
-	docker pull gcr.io/cloud-marketplace-tools/k8s/dev
-	BIN_FILE="/tmp/mpdev"
-	docker run gcr.io/cloud-marketplace-staging/marketplace-k8s-app-tools/k8s/dev:remove-ui-ownerrefs cat /scripts/dev > "$BIN_FILE"
-	chmod +x "$BIN_FILE"
-	$BIN_FILE scripts/install --deployer=gcr.io/ml-pipeline/google/pipelines/deployer:0.1 --parameters='{"name": "'$ML_APP_INSTANCE_NAME'", "namespace": "'$ML_NAMESPACE'"}'
-	kubectl get pods -n $ML_NAMESPACE --watch
-	kubectl describe configmap inverse-proxy-config -n $ML_NAMESPACE | grep googleusercontent.com
+# Antidote Model Sidecar - Local Training
+
+train-local: 
+	@echo "Enterining Local Training"
+	@echo "Select Model Type BERT or cohere: "; \
+    read MODEL; \
+	@python3 ./components/scoring_engine/main.py \
+		--gcp_project {GCP_PROJECT_ID} \
+		--gcs_location {GCP_BUCKET} \
+		--model_type MODEL
+
+
+# Antidote Model Sidecar - TFX Training in Cloud
+# Requires Kubeflow Endpoint
 
 install-skaffold:
 	curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 \ 
@@ -133,7 +133,7 @@ tfx-create-pipeline:
 		--pipeline-path=kubeflow_dag_runner.py \
 		--endpoint={ENDPOINT} \
 		--build-image
-    
+
 tfx-update-pipeline:
 	tfx pipeline update \
 		--pipeline-path=kubeflow_dag_runner.py \
@@ -144,25 +144,40 @@ tfx-run:
 		--pipeline-name=antidote_pipeline \
 		--endpoint=${ENDPOINT}
 
+
+# Antidote Model Sidecar - Model Deployment 
+
 build-model-serving:
+	@echo "Building Tensorflow Serving Container"
 	docker pull tensorflow/serving
 	docker run -d --name serving_base tensorflow/serving
-	docker cp ../components/model_pipeline/antidote_bert serving_base:/models/antidote_bert
-	docker commit --change "ENV MODEL_NAME antidote_bert" serving_base $USER/antidote_serving
-	docker kill serving_base
-	docker rm serving_base
+	@echo "Attaching Model"
+	docker cp ../components/model_pipeline/antidote_serving serving_base:/models/antidote_serving
+	docker commit --change "ENV MODEL_NAME antidote_serving" serving_base $USER/antidote_serving
+	docker tag antidote_serving gcr.io/tensorflow-serving-229609/antidote_serving:v0.1.0
+	docker push gcr.io/tensorflow-serving-229609/antidote_serving:v0.1.0
+	@echo "Model Container Pushed to Container Registry"
 
-create-serving-cluster: 
+create-serving-cluster:
+	@echo "Creating Serving Cluster for Toxicity Model"
 	gcloud container clusters create ANTIDOTE_SERVING_CLUSTER \
-	  --machine-type n1-standard-2 \
 		--num-nodes 5 \
 		--service-account ${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com \
 		--preemptible
+		--enable-autoscaling \
+  		--min-nodes=1 \
+  		--max-nodes=3 \
+  		--num-nodes=1 
 	gcloud config set container/cluster ANTIDOTE_SERVING_CLUSTER
-	gcloud container clusters get-credentials ANTIDOTE_SERVING_CLUSTER
+	gcloud container clusters get-credentials 
+	@echo "Serving Cluster Created"
 
-deploy-serving: 
-	docker tag $USER/antidote_serving gcr.io/tensorflow-serving/antidote_bert
-	gcloud auth configure-docker
-	docker push gcr.io/tensorflow-serving/antidote_bert
-	kubectl create -f tensorflow_serving/example/antidote_k8s.yaml
+deploy-image:
+	@echo "Deploying Image to K8s Cluster"
+	kubectl set image deployment/antidote-model-deployment image=gcr.io/tensorflow-serving-229609/antidote_serving:v0.1.0
+	kubectl create -f antidote_k8s.yaml
+
+serve-latest-model: 
+	@echo "Pushing Latest Model to Production"
+	# TODO: Update Parameters, Port, model name
+	docker run -p 8501:8501 -e MODEL_BASE_PATH=gs://$BUCKET_NAME -e MODEL_NAME=antidote_serving -t tensorflow/serving
