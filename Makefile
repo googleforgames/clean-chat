@@ -111,7 +111,7 @@ deploy-endpoints:
 
 # Antidote Model Sidecar - Local Training
 
-train-local: 
+train-basic: 
 	@echo "Enterining Local Training"
 	@echo "Select Model Type BERT or cohere: "; \
     read MODEL; \
