@@ -1,1 +1,0 @@
-./backend_python/deploy_cloud_run_for_backend.sh

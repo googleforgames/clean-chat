@@ -11,5 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-google-cloud-speech==2.5.0
-google-cloud-storage==1.40.0
+requests==2.26.0
+Flask==2.0.1
+gunicorn==20.1.0
+audioread==2.1.9
+google-cloud-storage==1.42.2
+google-cloud-speech==2.9.0
+google-cloud-pubsub==2.8.0

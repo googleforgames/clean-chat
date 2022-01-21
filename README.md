@@ -1,8 +1,7 @@
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+[![GitHub](https://img.shields.io/github/license/googleforgames/antidote)](./LICENSE)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/googleforgames/antidote)](https://github.com/googleforgames/quilkin/antidote)
+
+
 
 
 <!-- PROJECT LOGO -->
@@ -50,90 +49,99 @@
 <!-- PROJECT OVERVIEW -->
 ## Project Overview
 
-Antidote is an anti-toxicity, anti-cheat solution that makes games more enjoyable and inclusive for all.
-
-Toxic behavior, content, and players exist in all games. Therefore it’s very important to regulate toxicity in the gaming industry to maintain the quality game experience that players will want to stay in.
-
-Toxic behavior is becoming a large problem for online communities. Existing solutions are failing to stay relevant and stay fair.
-
-Antidote is a globally scalable solution to detect and flag toxic or disruptive behavior. 
-
-This gaming solution offers a configurable framework for analyzing chat/text messages and audio.
+Antidote is an open source solution to eliminate or mitigate toxic behavior in online multiplayer video games, with the goals of making games more enjoyable and inclusive for all. In large open multiplayer games, toxicity is rampant. Antidote provides the ability to proactively detect toxicity in voice and text chat, and provides scores to game moderation services or player support personnel. The project provides a globally scalable framework for training, deploying, and maintaining low-latency anti-toxicity models. . The framework comes pre-packaged with several machine learning 'base models' that allow you to train, or fine tune, the models to detect toxic speech in the vernacular of your game's players.
 
 
-These components make up the solution architecture:
+**What Antidote Is Not**
 
-**1. Collectors**
+Antidote is not a specific model for detecting toxicity. It is a <i>framework</i> where users can train and deploy their own ML model or they can build upon our pre-trained base models. 
 
-Collectors are modular components that are used to capture and route data, such as text, audio, or gameplay data, from 3rd party services into the Antidote framework. The objective is to build up a pluggable repo of modules that connect to various services as well as generalized collectors that listen for standard UDP or TCP traffic (as an example). Collectors will be built and open sourced based on demand.
+---
 
-**2. API Endpoints**
+## Architecture Components:
+
+Antidote’s design is divided into three main components: 
+ - The Scoring Engine: This is the online service that hosts the toxicity detection models, and conducts aggregation of the results. 
+- Game Telemetry Intake: Antidote’s means of communicating with Game Servers and handling game telemetry data from them. Note - Antidote is specifically designed to work as a third-party service or sidecar to the game server, and does not directly communicate with the client itself
+- ML Model Pipeline: A self-contained, ML-Ops driven framework for training, deploying, and maintaining toxicity models. The Model pipeline provides several options for base models, including both open source and Google Cloud Partner Models. 
+
+**1. API Endpoints**
 
 Antidote contains an an API Endpoint, that works with ESPv2 for OpenAPI. These API Endpoints allow chats and audio files to be passed into the Antidote framework through a secure, monitored service. The component is based on [Google Cloud Endpoints with ESPv2](https://cloud.google.com/endpoints/docs/openapi/tutorials).
+
+An API Developer Portal is provided as part of the framework, which can be used for debugging and testing purposes.
+
+![Portal](./assets/images/dev_portal.png)
+
+**2. Cloud Functions**
+
+Cloud Functions are used as part of this architecture to trigger serverless functions used as part of the event-driven pipeline. These functions are used for parsing data, performing quality checks, calling ML-based APIs (such as the Speech-to-text API), or a variety of other tasks. 
 
 **3. Scoring Engine**
 
 The Scoring Engine is based on Apache Beam, which enables an open source, unified model for defining both batch and streaming data processing pipelines. The objective of the Scoring Engine is to analyze, score, and flag toxic or disruptive behavior. It is based on a serverless design pattern, which allows the service to scale to meet varying data traffic patterns and demand. A unique feature of this deployment, is The Scoring Engine is a hydrid model based on a swappable ML model plus heuristic rules to bias or set business specific thresholds. [Google Cloud Dataflow](https://cloud.google.com/dataflow/docs/concepts), which is a managed service for Apache Beam, is used to deploy and scale the Scoring Engine.
 
-
-
-**4. Cloud Functions**
-
-Cloud Functions are used as part of this architecture to trigger serverless functions used as part of the event-driven pipeline. These functions are used for parsing data, performing quality checks, calling ML-based APIs (such as the Speech-to-text API), or a variety of other tasks. 
-
-**5. ML Model Pipeline**
+**4. ML Model Pipeline**
 
 The pipeline module orchestrates training and orchestration of the toxicity model. 
 
-#### Reference Architecture
-![Architecture](./assets/images/architecture_chat_and_audio_analysis.png)
+---
 
+## Reference Architecture
+![Architecture](./assets/images/reference_architecture.png)
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Follow these steps to config and lauch the Antidote framework:
+Follow these steps to config and deploy the Antidote framework:
 
-### Installation
+1. Clone the repo
 
-1.  **Edit the [config](config)** file based on your GCP project, your naming convensions, and desired parameters. By editing the config file, you are able to refine how sensitive the scoring is, the duration of windowing (which is used to aggregate scores), and a variety of other GCP specific settings. Please see the [config](config) file for all parameter options as well as their associated descriptions. 
+    ```
+    git clone https://github.com/googleforgames/antidote.git
+    ```
 
-```
-vi config
-```
+2. Make a copy of the [config.default](./config.default)
 
-2.  **Initialize GCP Services**. This command will enable GCP APIs, create Cloud Storage buckets, create PubSub topics, Create BigQuery Datasets and Tables, etc. 
+    ```
+    cp config.default config
+    ```
 
-```
-make initialize-gcp
-```
+3. Edit the config file 
 
-3.  **Deploy Cloud Functions**
+    This file should be updated to reflect your GCP project ID, your naming convensions, and desired parameters. By editing the config file, you are able to customize how sensitive the scoring is, the duration of windowing (which is used to aggregate scores), and a variety of other GCP specific settings.
 
-```
-make deploy-cloud-functions
-```
+    ```
+    vi config
+    ```
 
-4.  **Deploy the Endpoint Backend** (deployed on Cloud Run)
+4.  Initialize Terraform for deployment 
 
-```
-make deploy-endpoint-backend
-```
+    ```
+    make terraform-init
+    ```
 
-5.  **Deploy the Scoring Engine** (the scoring engine runs on Google Cloud Dataflow)
+5.  Deploy the GCP services, executing the actions proposed in a Terraform plan
 
-```
-make deploy-scoring-engine
-```
+    ```
+    make terraform-apply
+    ```
 
+6.  Deploy the Scoring Engine (the scoring engine runs on Google Cloud Dataflow)
 
-### Run the Demo
+    ```
+    make deploy-scoring-engine
+    ```
 
-There are currently two ways to score toxicity, both which can be demoed. The demos include: 
+7.  Deploy the Endpoint Backend
 
-1) Run a chat/text message client that allows a user to enter text and each text message will be scored for toxic language.  that processes text entered by a user and scores each message. In production, a chat client can be launched in order to forward all chat messages into GCP (via PubSub).
+    ```
+    make deploy-endpoint-backend
+    ```
 
-2) Run an audio file demo that analyzes a user audio file that is dropped in a Cloud Storage bucket. In production, files can be programically uploaded into the specified Cloud Storage bucket when a match ends or at a scheduled time for batch scoring.
+## Demo Examples
+
+There are currently two ways to score toxicity, both which can be demoed & tested. The demo examples include: 
 
 ```
 # Option #1
@@ -148,9 +156,31 @@ cd ./setup
 cd ./setup
 ./10-demo-audio-stt.sh
 ```
-## Machine Learning Pipeline
 
-This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently utilizes the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model. 
+## Toxicity Model Sidecar
+
+Antidote comes pre-packaged with a framework to train, test, and deploy toxicity detection models. Currently, the framework supports models that detect toxicity in voice and text chat. Antidote provides two model training interfaces; one basic training interface that only utilizes the training features of Keras, and one that supports an ML Ops framework. 
+
+### Model Choices
+
+#### BERT
+
+BERT is a transformer language model developed by Google in 2018. BERT is available via Tensorflow Hub, and users can fine-tune the model to their Game’s dataset. 
+
+#### Cohere.AI 
+Cohere.ai is a Google Cloud Partner who provides a developer API to create high-quality word embeddings. Users may “fine tune” a base cohere embedding model to receive embeddings that are specific to a Game’s dataset. We then provide a base Keras feed-forward neural network model, similar to those provided in Google tutorials, for a user to adjust. The Cohere Embeddings are fed into the Keras model, and the model is trained. 
+
+### Model Training - Basic 
+
+You may enter the basic training module with: 
+
+```
+make train basic 
+```
+
+### Model Training - TFX (ML Ops)
+
+This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently supports the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model in a TFX framework. 
 
 The architecture consists of: 
 - The model pipeline (tfx_pipeline.py). A TFX/Kubeflow pipeline to transform the training data, train the model, and push the resulting model artifact 
@@ -158,14 +188,7 @@ The architecture consists of:
   - trainer.py (TFX training file)
 - The pipeline runner (kubeflow_dag_runner.py)
 
-You will need to setup a kubernetes cluster with kubeflow deployed on it. This is where your built pipeline will reside. 
-
-You can set up your cluster with [AI Platform Pipelines](https://cloud.google.com/ai-platform/pipelines/docs/getting-started) manually, or automatically build the cluster with: 
-```
-create-pipeline-cluster
-```
-
-Be sure to set the name of your endpoint
+You will need to setup a kubernetes cluster with kubeflow deployed on it. This is where your built pipeline will reside. You can set up your cluster with [AI Platform Pipelines](https://cloud.google.com/ai-platform/pipelines/docs/getting-started). Be sure to set the name of your endpoint:
 
 ```
 export ENDPOINT="Your Endpoint Name"
@@ -182,17 +205,28 @@ Additional runs of the pipeline can be conducted with:
 make tfx-run
 ```
 
-### Setting Up Model Serving (In Progress)
+### Model Deployment
 
-To deploy your pipeline to the cloud, we need both a serving container and a serving cluster. You can create both with:  
+To deploy your pipeline to the cloud, we need both a serving container and a serving cluster. You can create the serving container with: 
 
-```
+``` 
 make build-model-serving
-create-serving-cluster: 
 ```
-You can then deploy your pipeline with: 
+
+Next, create a Kubernetes cluster to deploy your model on: 
+
+``` 
+make create-serving-cluster
 ```
-make deploy serving
+Finally, to create a deployment of the model, run: 
+
+```
+make deploy-image
+```
+If you need to update the model that is currently being served, you may do so with: 
+
+```
+make serve-latest-model
 ```
 
 <!-- ROADMAP -->
@@ -200,9 +234,7 @@ make deploy serving
 
 Project is currently in alpha status, and is being actively developed. Expect things to break.
 
-Not to be used in production systems.
-
-See the [open issues](https://github.com/github_username/repo_name/issues) for a list of proposed features (and known issues).
+See the [open issues](https://github.com/googleforgames/antidote/issues) for a list of proposed features (and known issues).
 
 
 <!-- CONTRIBUTING -->

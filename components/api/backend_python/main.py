@@ -1,20 +1,16 @@
-################################################################################################################
-#
-# Copyright 2022 Google LLC
+# Copyright 2022 Google LLC All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    https://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-################################################################################################################
 
 import os
 import time
@@ -169,6 +165,11 @@ def generate_filename(url):
     return filename
 
 
+@app.route("/test", methods = ['GET'])
+def test():
+    return f'Hello!', 200
+
+
 @app.route("/audio", methods = ['POST'])
 def audio():
     if request.method == 'POST':
@@ -265,18 +266,10 @@ def chat():
             payload_filename = f"{payload['username'].lower()}_{int(time.time())}.json"
             gcp_storage_upload_string(json.dumps(payload), bucket_name=bucket_name, blob_name=payload_filename)
             
-            # Publish to PubSub
-            #print(f'''[ INFO ] Publishing payload to PubSub Topic: {pubsub_topic}''')
-            #pubsub_publish( pubsub_publisher, project_id=project_id, pubsub_topic=pubsub_topic, message=payload )
             return 'Success', 201
         except Exception as e:
             print(f'[ EXCEPTION ] At /chat. {e}')
             return '', 401
-
-
-@app.route("/test", methods = ['GET'])
-def test():
-    return f'Hello!', 200
 
 
 @app.route("/antidote_callback", methods = ['POST'])

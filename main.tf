@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC All Rights Reserved.
+// Copyright 2022 Google LLC All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,23 +35,23 @@ variable "gcp_service_list" {
   description ="The list of apis necessary for the project"
   type = list(string)
   default = [
+    "cloudfunctions.googleapis.com",
     "storage.googleapis.com",
-	"cloudfunctions.googleapis.com",
-	"run.googleapis.com",
-	"container.googleapis.com",
-	"containerregistry.googleapis.com",
-	"artifactregistry.googleapis.com",
-	"cloudbuild.googleapis.com",
-	"dataflow.googleapis.com",
-	"speech.googleapis.com",
-    "vpcaccess.googleapis.com"
+    "cloudbuild.googleapis.com",
+    "containerregistry.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "run.googleapis.com",
+    "container.googleapis.com",
+    "dataflow.googleapis.com",
+    "speech.googleapis.com"
   ]
 }
 
 resource "google_project_service" "gcp_services" {
   for_each = toset(var.gcp_service_list)
-  project = "${var.GCP_PROJECT_ID}"
+  project = "fit-entity-333016"
   service = each.key
+  disable_dependent_services = true
 }
 
 # Enable Perspective API if condition is met
@@ -59,6 +59,7 @@ resource "google_project_service" "perspective_api" {
   count = var.PERSPECTIVE_API_KEY!="" ? 1 : 0
   project = "${var.GCP_PROJECT_ID}"
   service = "commentanalyzer.googleapis.com"
+  disable_dependent_services = true
 }
 
 /******************************************************
@@ -349,4 +350,35 @@ resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
       resource   = google_storage_bucket.text-dropzone.name
   }
 
+}
+
+/******************************************************
+
+IAM Roles and Permissions
+
+*******************************************************/
+
+# Add Cloud Storage Object Admin to Dataflow Service Account
+resource "google_project_iam_member" "iam_for_dataflow_storage" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+}
+# Add Dataflow Admin permissions to Dataflow Service Account
+resource "google_project_iam_member" "iam_for_dataflow_admin" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/dataflow.admin"
+  member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+}
+# Add Dataflow Worker permissions to Dataflow Service Account
+resource "google_project_iam_member" "iam_for_dataflow_worker" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/dataflow.worker"
+  member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+}
+# Add PubSub Editor to Dataflow Service Account
+resource "google_project_iam_member" "iam_for_dataflow_pubsub" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/pubsub.editor"
+  member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 }
