@@ -149,7 +149,7 @@ def run_fn(fn_args: TrainerFnArgs):
         validation_steps=fn_args.eval_steps)
 
     signatures = {
-        'serving_default':
+        'antidote-serving':
             _get_serve_tf_examples_fn(model,
                                       tf_transform_output).get_concrete_function(
                                           tf.TensorSpec(
