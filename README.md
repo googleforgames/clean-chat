@@ -1,8 +1,7 @@
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+[![GitHub](https://img.shields.io/github/license/googleforgames/antidote)](./LICENSE)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/googleforgames/antidote)](https://github.com/googleforgames/quilkin/antidote)
+
+
 
 
 <!-- PROJECT LOGO -->
@@ -235,9 +234,7 @@ make serve-latest-model
 
 Project is currently in alpha status, and is being actively developed. Expect things to break.
 
-Not to be used in production systems.
-
-See the [open issues](https://github.com/github_username/repo_name/issues) for a list of proposed features (and known issues).
+See the [open issues](https://github.com/googleforgames/antidote/issues) for a list of proposed features (and known issues).
 
 
 <!-- CONTRIBUTING -->
