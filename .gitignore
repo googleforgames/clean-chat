@@ -1,1 +1,11 @@
 .DS_Store
+
+# Ignore custom user config file
+config
+
+# Ignore Terraform state
+.terraform*
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+
