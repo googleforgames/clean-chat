@@ -1,63 +1,74 @@
 ## Overview 
 
-This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently utilizes the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model. 
+Antidote comes pre-packaged with a framework to train, test, and deploy toxicity detection models. Currently, the framework supports models that detect toxicity in voice and text chat. Antidote provides two model training interfaces; one basic training interface that only utilizes the training features of Keras, and one that supports an ML Ops framework. 
+
+### Model Choices
+
+#### BERT
+
+BERT is a transformer language model developed by Google in 2018. BERT is available via Tensorflow Hub, and users can fine-tune the model to their Game’s dataset. 
+
+#### Cohere.AI 
+Cohere.ai is a Google Cloud Partner who provides a developer API to create high-quality word embeddings. Users may “fine tune” a base cohere embedding model to receive embeddings that are specific to a Game’s dataset. We then provide a base Keras feed-forward neural network model, similar to those provided in Google tutorials, for a user to adjust. The Cohere Embeddings are fed into the Keras model, and the model is trained. 
+
+### Model Training - Basic 
+
+You may enter the basic training module with: 
+
+```
+make train basic 
+```
+
+### Model Training - TFX (ML Ops)
+
+This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently supports the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model in a TFX framework. 
 
 The architecture consists of: 
 - The model pipeline (tfx_pipeline.py). A TFX/Kubeflow pipeline to transform the training data, train the model, and push the resulting model artifact 
   - transform.py (TFX transform file)
   - trainer.py (TFX training file)
+- The pipeline runner (kubeflow_dag_runner.py)
 
-
-Set your project
-```
-gcloud config set project antidote-playground
-```
-
-
-For running the pipeline in Google Cloud, find your Google Cloud project ID and set it as an enviroment variable
+You will need to setup a kubernetes cluster with kubeflow deployed on it. This is where your built pipeline will reside. You can set up your cluster with [AI Platform Pipelines](https://cloud.google.com/ai-platform/pipelines/docs/getting-started). Be sure to set the name of your endpoint:
 
 ```
-gcloud config list --format 'value(core.project)' 2>/dev/null
-env GOOGLE_CLOUD_PROJECT={PROJECT ID HERE}
+export ENDPOINT="Your Endpoint Name"
 ```
-
-### Setting up your Kubernetes Cluster 
-
-To deploy your pipeline to the cloud, we need to create a kubernetes cluster to host the kubeflow deployment. 
-
-To create the cluster, run the following command. Make sure that the enviroment variables SERVICE_ACCOUNT and PROJECT_ID are defined beforehand. 
-
-```
-make create-cluster
-```
-
-This will create a new Kubernetes cluster named ANTIDOTE_CLUSTER running on a preemptible VM.  You'll need am ENDPOINT enviroment variable with the address of the new cluster. 
-
-### Build Your Pipeline
-
-When creating a pipeline for Kubeflow Pipelines, we need a container image which will be used to run our pipeline. You may either use base image, or a custom image. 
-
-If selecting a base image, run the following command for Skaffold to pull the image from Docker Hub. It will take 5~10 minutes when we build the image for the first time, but it will take much less time from the second build.
-
-```
-make install-skaffold
-```
-Define the name of your pipeline image: 
-
-```
-TFX_IMAGE=gcr.io/${=PROJECT_ID}/antidote_pipeline
-```
-
-You can then run an initial execution of the pipeline with:
+You can build your pipeline by running 
 
 ```
 make tfx-create-pipeline
 ```
-A Dockerfile will be generated. Don't forget to add it to the source control system (for example, git) along with other source files.
 
-### 
+Additional runs of the pipeline can be conducted with: 
 
+``` 
+make tfx-run
+```
 
-### Scheduling Retrains
+### Model Deployment
+
+To deploy your pipeline to the cloud, we need both a serving container and a serving cluster. You can create the serving container with: 
+
+``` 
+make build-model-serving
+```
+
+Next, create a Kubernetes cluster to deploy your model on: 
+
+``` 
+make create-serving-cluster
+```
+Finally, to create a deployment of the model, run: 
+
+```
+make deploy-image
+```
+If you need to update the model that is currently being served, you may do so with: 
+
+```
+make serve-latest-model
+```
+
 
 
