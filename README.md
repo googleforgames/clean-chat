@@ -71,6 +71,7 @@ Antidote’s design is divided into three main components:
 Antidote contains an an API Endpoint, that works with ESPv2 for OpenAPI. These API Endpoints allow chats and audio files to be passed into the Antidote framework through a secure, monitored service. The component is based on [Google Cloud Endpoints with ESPv2](https://cloud.google.com/endpoints/docs/openapi/tutorials).
 
 An API Developer Portal is provided as part of the framework, which can be used for debugging and testing purposes.
+
 ![Portal](./assets/images/dev_portal.png)
 
 **2. Cloud Functions**
