@@ -19,6 +19,9 @@
 #
 ##########################################################################
 
+# Get Directory of this script
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
 # Remove/clean any existing container
 docker rmi -f scoring_engine
 docker rm -f $(docker ps -a -f name=scoring_engine -q)
@@ -29,7 +32,7 @@ docker rm -f $(docker ps -a -f name=scoring_engine -q)
 echo "GCP_PROJECT_ID: $TF_VAR_GCP_PROJECT_ID"
 
 # Build scoring engine container
-docker build --tag scoring_engine . 
+docker build -t scoring_engine -f ${SCRIPT_DIR}/Dockerfile ${SCRIPT_DIR}/
 
 # Deploy to Dataflow
 docker run --name scoring_engine \
