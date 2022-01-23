@@ -49,7 +49,7 @@ variable "gcp_service_list" {
 
 resource "google_project_service" "gcp_services" {
   for_each = toset(var.gcp_service_list)
-  project = "fit-entity-333016"
+  project = "${var.GCP_PROJECT_ID}"
   service = each.key
   disable_dependent_services = true
 }
