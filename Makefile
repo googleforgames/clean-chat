@@ -86,7 +86,7 @@ deploy-scoring-engine-interactive:
 	./components/scoring_engine/deploy-scoring-engine-interactive.sh
 
 deploy-endpoints:
-	@echo "Deploying endpoint backend app"
+	@echo "Deploying API backend app"
 	./components/api/backend_python/deploy_cloud_run_for_backend.sh
 
 # Antidote Model Sidecar - Local Training
