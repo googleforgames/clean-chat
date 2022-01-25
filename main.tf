@@ -39,7 +39,6 @@ variable "gcp_service_list" {
     "storage.googleapis.com",
     "cloudbuild.googleapis.com",
     "containerregistry.googleapis.com",
-    "artifactregistry.googleapis.com",
     "run.googleapis.com",
     "container.googleapis.com",
     "dataflow.googleapis.com",
@@ -49,16 +48,14 @@ variable "gcp_service_list" {
 
 resource "google_project_service" "gcp_services" {
   for_each = toset(var.gcp_service_list)
-  project = "fit-entity-333016"
+  project = "${var.GCP_PROJECT_ID}"
   service = each.key
   disable_dependent_services = true
 }
 
-# Enable Perspective API if condition is met
-resource "google_project_service" "perspective_api" {
-  count = var.PERSPECTIVE_API_KEY!="" ? 1 : 0
+resource "google_project_service" "gcp_services_artifact_repo" {
   project = "${var.GCP_PROJECT_ID}"
-  service = "commentanalyzer.googleapis.com"
+  service = "artifactregistry.googleapis.com"
   disable_dependent_services = true
 }
 
@@ -76,6 +73,11 @@ resource "google_artifact_registry_repository" "antidote-repo" {
   
   description = "Antidote Docker Repository"
   format = "DOCKER"
+
+  depends_on = [
+    google_project_service.gcp_services_artifact_repo
+  ]
+
 }
 
 /******************************************************
@@ -89,7 +91,6 @@ resource "google_storage_bucket" "text-dropzone" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket" "audio-dropzone-short" {
@@ -97,7 +98,6 @@ resource "google_storage_bucket" "audio-dropzone-short" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket" "audio-dropzone-long" {
@@ -105,7 +105,6 @@ resource "google_storage_bucket" "audio-dropzone-long" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket" "gcs-for-cloud-functions" {
@@ -113,7 +112,6 @@ resource "google_storage_bucket" "gcs-for-cloud-functions" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 
@@ -122,7 +120,6 @@ resource "google_storage_bucket" "dataflow-bucket" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket_object" "dataflow-staging-setup" {
