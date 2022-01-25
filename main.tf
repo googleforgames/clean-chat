@@ -39,11 +39,12 @@ variable "gcp_service_list" {
     "storage.googleapis.com",
     "cloudbuild.googleapis.com",
     "containerregistry.googleapis.com",
-    "artifactregistry.googleapis.com",
     "run.googleapis.com",
     "container.googleapis.com",
     "dataflow.googleapis.com",
-    "speech.googleapis.com"
+    "speech.googleapis.com",
+    "pubsub.googleapis.com",
+    "artifactregistry.googleapis.com",
   ]
 }
 
@@ -51,14 +52,6 @@ resource "google_project_service" "gcp_services" {
   for_each = toset(var.gcp_service_list)
   project = "${var.GCP_PROJECT_ID}"
   service = each.key
-  disable_dependent_services = true
-}
-
-# Enable Perspective API if condition is met
-resource "google_project_service" "perspective_api" {
-  count = var.PERSPECTIVE_API_KEY!="" ? 1 : 0
-  project = "${var.GCP_PROJECT_ID}"
-  service = "commentanalyzer.googleapis.com"
   disable_dependent_services = true
 }
 
@@ -76,6 +69,11 @@ resource "google_artifact_registry_repository" "antidote-repo" {
   
   description = "Antidote Docker Repository"
   format = "DOCKER"
+
+  depends_on = [
+    google_project_service.gcp_services["artifactregistry.googleapis.com"]
+  ]
+
 }
 
 /******************************************************
@@ -89,7 +87,6 @@ resource "google_storage_bucket" "text-dropzone" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket" "audio-dropzone-short" {
@@ -97,7 +94,6 @@ resource "google_storage_bucket" "audio-dropzone-short" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket" "audio-dropzone-long" {
@@ -105,7 +101,6 @@ resource "google_storage_bucket" "audio-dropzone-long" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket" "gcs-for-cloud-functions" {
@@ -113,7 +108,6 @@ resource "google_storage_bucket" "gcs-for-cloud-functions" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 
@@ -122,7 +116,6 @@ resource "google_storage_bucket" "dataflow-bucket" {
   location      = "US"
   storage_class = "STANDARD"
   force_destroy = true
-  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket_object" "dataflow-staging-setup" {
@@ -145,14 +138,23 @@ Google PubSub Resources
 
 resource "google_pubsub_topic" "text-input" {
   name = "${var.PUBSUB_TOPIC_TEXT_INPUT}"
+  depends_on = [
+    google_project_service.gcp_services["pubsub.googleapis.com"]
+  ]
 }
 
 resource "google_pubsub_topic" "text-scored" {
   name = "${var.PUBSUB_TOPIC_TEXT_SCORED}"
+  depends_on = [
+    google_project_service.gcp_services["pubsub.googleapis.com"]
+  ]
 }
 
 resource "google_pubsub_topic" "toxic-topic" {
   name = "${var.PUBSUB_TOPIC_TOXIC}"
+  depends_on = [
+    google_project_service.gcp_services["pubsub.googleapis.com"]
+  ]
 }
 
 resource "google_pubsub_subscription" "text-scored-sub" {
@@ -172,6 +174,9 @@ resource "google_pubsub_subscription" "text-scored-sub" {
     minimum_backoff = "10s"
     maximum_backoff = "120s"
   }
+  depends_on = [
+    google_project_service.gcp_services["pubsub.googleapis.com"]
+  ]
 }
 
 resource "google_pubsub_subscription" "toxic-topic-sub" {
@@ -190,6 +195,9 @@ resource "google_pubsub_subscription" "toxic-topic-sub" {
     minimum_backoff = "10s"
     maximum_backoff = "120s"
   }
+  depends_on = [
+    google_project_service.gcp_services["pubsub.googleapis.com"]
+  ]
 }
 
 /******************************************************
@@ -302,7 +310,10 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-short" {
       event_type = "google.storage.object.finalize"
       resource   = google_storage_bucket.audio-dropzone-short.name
   }
-
+  
+  depends_on = [
+    google_project_service.gcp_services["cloudfunctions.googleapis.com"]
+  ]
 }
 
 resource "google_cloudfunctions_function" "cf-speech-to-text-long" {
@@ -326,6 +337,9 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-long" {
       resource   = google_storage_bucket.audio-dropzone-long.name
   }
 
+  depends_on = [
+    google_project_service.gcp_services["cloudfunctions.googleapis.com"]
+  ]
 }
 
 resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
@@ -350,6 +364,9 @@ resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
       resource   = google_storage_bucket.text-dropzone.name
   }
 
+  depends_on = [
+    google_project_service.gcp_services["cloudfunctions.googleapis.com"]
+  ]
 }
 
 /******************************************************

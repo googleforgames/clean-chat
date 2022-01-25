@@ -44,7 +44,8 @@ help:
 deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
 
 # APIs should be enabled as part of the Terraform deployment. 
-# This make target can be used to enable all required GCP APIs.
+# This make target can be used as an alternative way to enable 
+# all required GCP APIs if needed.
 enable-gcp-apis:
 	gcloud services enable \
 	storage.googleapis.com \
@@ -55,7 +56,8 @@ enable-gcp-apis:
 	container.googleapis.com \
 	run.googleapis.com \
 	dataflow.googleapis.com \
-	speech.googleapis.com
+	speech.googleapis.com \
+	pubsub.googleapis.com
 
 terraform-init:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
@@ -67,18 +69,24 @@ terraform-apply:
 
 terraform-destroy:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
+	@echo "Shutting down and deleting the Dataflow Scoring Engine called antidote-scoring-engine"
+	export DATAFLOW_JOB_ID=$(gcloud dataflow jobs list --region ${TF_VAR_DATAFLOW_REGION} --filter "name=antidote-scoring-engine" --filter "state=Running" --format "value(JOB_ID)")
+	gcloud dataflow jobs cancel --region ${TF_VAR_DATAFLOW_REGION} ${DATAFLOW_JOB_ID}
+	@echo "Shutting down and deleting all Terraform deployed services"
 	terraform destroy
 
 deploy-scoring-engine:
-	@echo "Deploying Antidote Scoring Engine"
-	@nohup ./components/scoring_engine/deploy-scoring-engine.sh &
+	@echo "Deploying Antidote Scoring Engine."
+	@echo "This may take a few minutes."
+	@echo "You can go here to see the running job: https://console.cloud.google.com/dataflow/jobs"
+	nohup ./components/scoring_engine/deploy-scoring-engine.sh &
 
 deploy-scoring-engine-interactive:
 	@echo "Deploying Antidote Scoring Engine (in interactive mode)"
-	@./components/scoring_engine/deploy-scoring-engine-interactive.sh
+	./components/scoring_engine/deploy-scoring-engine-interactive.sh
 
 deploy-endpoints:
-	@echo "Deploying endpoint backend app"
+	@echo "Deploying API backend app"
 	./components/api/backend_python/deploy_cloud_run_for_backend.sh
 
 # Antidote Model Sidecar - Local Training

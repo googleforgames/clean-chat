@@ -31,4 +31,4 @@ gcloud run deploy $TF_VAR_APP_CLOUD_RUN_NAME \
     --set-env-vars TF_VAR_GCS_BUCKET_TEXT_DROPZONE=${TF_VAR_GCS_BUCKET_TEXT_DROPZONE} \
     --set-env-vars TF_VAR_PUBSUB_TOPIC_TEXT_INPUT=${TF_VAR_PUBSUB_TOPIC_TEXT_INPUT} \
     --timeout 30 \
-    --allow-unauthenticated
+    --no-allow-unauthenticated
