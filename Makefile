@@ -37,8 +37,8 @@ help:
 	@echo "Deploy API Endpoints"
 	@echo "    make deploy-endpoints"
 	@echo ""
-	@echo "Delete Services - Terraform Destroy"
-	@echo "    make terraform-destroy"
+	@echo "Delete Services"
+	@echo "    make delete-all-services"
 	@echo ""
 
 deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
@@ -67,11 +67,19 @@ terraform-apply:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	terraform apply
 
-terraform-destroy:
+destroy-all: destroy-backend-api destroy-scoring-engine destroy-terraform
+
+destroy-backend-api:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
-	@echo "Shutting down and deleting the Dataflow Scoring Engine called antidote-scoring-engine"
-	export DATAFLOW_JOB_ID=$(gcloud dataflow jobs list --region ${TF_VAR_DATAFLOW_REGION} --filter "name=antidote-scoring-engine" --filter "state=Running" --format "value(JOB_ID)")
-	gcloud dataflow jobs cancel --region ${TF_VAR_DATAFLOW_REGION} ${DATAFLOW_JOB_ID}
+	@echo "Shutting down and deleting the Backend API Service"
+	gcloud run services delete ${TF_VAR_APP_CLOUD_RUN_NAME} --region ${TF_VAR_APP_CLOUD_RUN_REGION} --no-async
+
+destroy-scoring-engine:
+	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
+	./components/scoring_engine/cancel-dataflow-job.sh
+
+destroy-terraform:
+	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	@echo "Shutting down and deleting all Terraform deployed services"
 	terraform destroy
 
