@@ -38,7 +38,7 @@ help:
 	@echo "    make deploy-endpoints"
 	@echo ""
 	@echo "Delete Services"
-	@echo "    make delete-all-services"
+	@echo "    make destroy-all"
 	@echo ""
 
 deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
