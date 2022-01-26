@@ -112,7 +112,7 @@ train-basic:
 # Antidote Model Sidecar - TFX Training in Cloud
 
 create-pipeline-cluster:
-	export PIPELINE_CLUSTER_NAME="toxicity-pipeline"
+	export PIPELINE_CLUSTER_NAME=${TF_VAR_ML_CLUSTER}
 	export PIPELINE_VERSION=1.7.1
 	export ZONE=${TF_VAR_GCP_REGION}
 	export MACHINE_TYPE=${TF_VAR_ML_MACHINE_TYPE}
