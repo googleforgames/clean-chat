@@ -97,18 +97,6 @@ deploy-endpoints:
 	@echo "Deploying API backend app"
 	./components/api/backend_python/deploy_cloud_run_for_backend.sh
 
-# Antidote Model Sidecar - Local Training
-
-train-basic: 
-	@echo "Enterining Local Training"
-	@echo "Select Model Type BERT or cohere: "; \
-    read MODEL; \
-	@python3 ./components/scoring_engine/main.py \
-		--gcp_project {GCP_PROJECT_ID} \
-		--gcs_location {GCP_BUCKET} \
-		--model_type MODEL
-
-
 # Antidote Model Sidecar - TFX Training in Cloud
 
 create-pipeline-cluster:
