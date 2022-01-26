@@ -36,6 +36,14 @@ make create-pipeline-cluster
 ```
 Your pipeline endpoint (the address of your pipeline is now contained in the enviroment variable KUBEFLOW_ENDPOINT
 
+Before you build your pipeline, set the enviroment variables for the number of training steps, evaluation steps, adn the path to the model's training data. 
+
+```
+export TRAINING_DATA_PATH='path here'
+export TRAINING_STEPS='training steps'
+export EVAL_STEPS='eval steps'
+```
+
 To build your TFX pipeline on the Kubeflow cluster that you just created, run: 
 
 ```
