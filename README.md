@@ -188,12 +188,14 @@ The architecture consists of:
   - trainer.py (TFX training file)
 - The pipeline runner (kubeflow_dag_runner.py)
 
-You will need to setup a kubernetes cluster with kubeflow deployed on it. This is where your built pipeline will reside. You can set up your cluster with [AI Platform Pipelines](https://cloud.google.com/ai-platform/pipelines/docs/getting-started). Be sure to set the name of your endpoint:
+You will need to setup a kubernetes cluster with kubeflow deployed on it. This is where your built pipeline will reside. You can set up your cluster with:
 
 ```
-export ENDPOINT="Your Endpoint Name"
+make create-pipeline-cluster
 ```
-You can build your pipeline by running 
+Your pipeline endpoint (the address of your pipeline is now contained in the enviroment variable KUBEFLOW_ENDPOINT
+
+To build your TFX pipeline on the Kubeflow cluster that you just created, run: 
 
 ```
 make tfx-create-pipeline
