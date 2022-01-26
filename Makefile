@@ -147,12 +147,16 @@ tfx-create-pipeline:
 tfx-update-pipeline:
 	tfx pipeline update \
 		--pipeline-path=kubeflow_dag_runner.py \
-		--endpoint=${ENDPOINT}
+		--endpoint=${KUBEFLOW_ENDPOINT}
 
 tfx-run:
 	tfx run create \
 		--pipeline-name=${TF_VAR_ML_PIPELINE_NAME} \
-		--endpoint=${ENDPOINT}
+		--endpoint=${KUBEFLOW_ENDPOINT}
+tfx-list: 
+	tfx pipeline list \
+	--engine=kubeflow \
+	--endpoint=${KUBEFLOW_ENDPOINT}
 
 
 # Antidote Model Sidecar - Model Deployment 
