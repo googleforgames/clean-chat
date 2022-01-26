@@ -171,7 +171,7 @@ To learn more about Cohere, see their [documentation](https://docs.cohere.ai/).
 To utilize the Cohere model, run: 
 
 ```
-python ./cohere/main.py 'API KEY HERE' 'DATA PATH HERE' 'COHERE MODEL TYPE HERE'
+python .components/model/cohere/main.py 'API KEY HERE' 'DATA PATH HERE' 'COHERE MODEL TYPE HERE'
 ```
 
 ### BERT
