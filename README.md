@@ -161,24 +161,24 @@ cd ./setup
 
 Antidote comes pre-packaged with a framework to train, test, and deploy toxicity detection models. Currently, the framework supports models that detect toxicity in voice and text chat. Antidote provides two model training interfaces; one basic training interface that only utilizes the training features of Keras, and one that supports an ML Ops framework. 
 
-### Model Choices
+## Model Choices
 
-#### BERT
+### Cohere.AI 
+Cohere.ai is a Google Cloud Partner who provides a developer API to create high-quality word embeddings. Users may “fine tune” a base cohere embedding model to receive embeddings that are specific to a Game’s dataset. We then provide a base Keras feed-forward neural network model, similar to those provided in Google tutorials, for a user to adjust. The Cohere Embeddings are fed into the Keras model, and the model is trained. 
+
+To learn more about Cohere, see their [documentation](https://docs.cohere.ai/).
+
+To utilize the Cohere model, run: 
+
+```
+python ./cohere/main.py 'API KEY HERE' 'DATA PATH HERE' 'COHERE MODEL TYPE HERE'
+```
+
+### BERT
 
 BERT is a transformer language model developed by Google in 2018. BERT is available via Tensorflow Hub, and users can fine-tune the model to their Game’s dataset. 
 
-#### Cohere.AI 
-Cohere.ai is a Google Cloud Partner who provides a developer API to create high-quality word embeddings. Users may “fine tune” a base cohere embedding model to receive embeddings that are specific to a Game’s dataset. We then provide a base Keras feed-forward neural network model, similar to those provided in Google tutorials, for a user to adjust. The Cohere Embeddings are fed into the Keras model, and the model is trained. 
-
-### Model Training - Basic 
-
-You may enter the basic training module with: 
-
-```
-make train basic 
-```
-
-### Model Training - TFX (ML Ops)
+#### Model Training with TFX (ML Ops)
 
 This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently supports the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model in a TFX framework. 
 
