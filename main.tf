@@ -129,6 +129,13 @@ resource "google_storage_bucket_object" "dataflow-tmp-setup" {
   content = "Used for setup"
   bucket = google_storage_bucket.dataflow-bucket.name
 }
+  
+resource "google_storage_bucket_object" "kubeflow-pipeline-root" {
+  name   = "${var.TF_VAR_ML_PIPELINE_ROOT}"
+  location      = "US"
+  storage_class = "STANDARD"
+  force_destroy = true
+}
 
 /******************************************************
 
