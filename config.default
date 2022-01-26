@@ -151,6 +151,7 @@ export TF_VAR_ML_MACHINE_TYPE=n1-standard-2
 
 # Additional ML Pipeline Configs
 export TF_VAR_ML_SCOPES=cloud-platform
+export TF_VAR_ML_PIPELINE_NAME=${TF_VAR_GCP_PROJECT_ID}-toxicity-pipeline
 export TF_VAR_ML_APP_INSTANCE_NAME=${TF_VAR_GCP_PROJECT_ID}-antidote-ml-pipeline
 export TF_VAR_ML_NAMESPACE=antidote-ml-namespace
 export TF_VAR_MARKETPLACE_TOOLS_TAG=remove-ui-ownerrefs
