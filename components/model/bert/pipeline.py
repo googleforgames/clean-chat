@@ -33,8 +33,6 @@ from tfx.types import Channel
 from tfx.types.standard_artifacts import Model, ModelBlessing
 
 
-from pipeline import config
-
 def create_train_pipeline(
 	pipeline_name: Text,
     pipeline_root: Text,
@@ -50,10 +48,6 @@ def create_train_pipeline(
 	Returns:
     	A TFX pipeline object.
 	''' 
-
-	## GCS Location
-	serving_model_dir = "config.MODEL_GCS"
-
 
 	## Bring Data Into Pipeline
 	output = example_gen_pb2.Output(

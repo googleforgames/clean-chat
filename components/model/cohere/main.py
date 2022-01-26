@@ -16,6 +16,9 @@
 #
 ################################################################################################################
 
+import logging
+import sys
+
 import cohere as co
 import pandas as pd
 
@@ -28,9 +31,9 @@ except ImportError:
 	pip.main(['install', google.cloud]) 
 
 class Cohere(object, key):
-	''' Handles Embedding with Cohere AI. Supports Retrieval from GCS or Bigquery'''
+	''' Handles Embedding with Cohere AI. '''
 	def init(self, **kwargs):
-		self.client  = cohere.Client("IstgY4Kq8v9r0nb74tjVsR5FPoqEoZYBu71IM5SD") # ADD YOUR API KEY HERE
+		self.client  = cohere.Client(key) # ADD YOUR API KEY HERE
 
 	def batch_embed(self, examples, batch_size, model_id):
         embeddings = []
@@ -68,5 +71,24 @@ class Cohere(object, key):
 		embeddings = self.batch_embed(examples=train_text, batch_size=5, model_id='small-20211115')
 
 		return embeddings, labels
+
+if __name__ == '__main__':
+
+	logging.warning('Creating Embeddings')
+	cohere = Cohere(sys.argv[1])
+	embeddings, labels = cohere.preprocess(sys.argv[2], sys.argv[3])
+	logging.warning('Embeddings Successfully Retrieved')
+	sys.stdout.write('Proceed with Training?')
+	choice = raw_input().lower()
+	if choice in yes:
+   		# Basic Model. Replace with your own model by editing toxicity_model.py 
+		embed_length = len(embeddings[1])
+		model = Model().model(embed_length)
+		## Fit and save to GCS bucket
+		model.fit(embeddings,labels, gcs_location) 
+	elif choice in no:
+   		return embeddings, labels
+	else:
+   		sys.stdout.write("Please respond with 'yes' or 'no'")
     
 
