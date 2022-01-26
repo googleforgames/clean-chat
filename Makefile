@@ -37,8 +37,8 @@ help:
 	@echo "Deploy API Endpoints"
 	@echo "    make deploy-endpoints"
 	@echo ""
-	@echo "Delete Services - Terraform Destroy"
-	@echo "    make terraform-destroy"
+	@echo "Delete Services"
+	@echo "    make destroy-all"
 	@echo ""
 
 deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
@@ -67,11 +67,19 @@ terraform-apply:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	terraform apply
 
-terraform-destroy:
+destroy-all: destroy-backend-api destroy-scoring-engine destroy-terraform
+
+destroy-backend-api:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
-	@echo "Shutting down and deleting the Dataflow Scoring Engine called antidote-scoring-engine"
-	export DATAFLOW_JOB_ID=$(gcloud dataflow jobs list --region ${TF_VAR_DATAFLOW_REGION} --filter "name=antidote-scoring-engine" --filter "state=Running" --format "value(JOB_ID)")
-	gcloud dataflow jobs cancel --region ${TF_VAR_DATAFLOW_REGION} ${DATAFLOW_JOB_ID}
+	@echo "Shutting down and deleting the Backend API Service"
+	gcloud run services delete ${TF_VAR_APP_CLOUD_RUN_NAME} --region ${TF_VAR_APP_CLOUD_RUN_REGION} --no-async
+
+destroy-scoring-engine:
+	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
+	./components/scoring_engine/cancel-dataflow-job.sh
+
+destroy-terraform:
+	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	@echo "Shutting down and deleting all Terraform deployed services"
 	terraform destroy
 
@@ -89,20 +97,30 @@ deploy-endpoints:
 	@echo "Deploying API backend app"
 	./components/api/backend_python/deploy_cloud_run_for_backend.sh
 
-# Antidote Model Sidecar - Local Training
-
-train-basic: 
-	@echo "Enterining Local Training"
-	@echo "Select Model Type BERT or cohere: "; \
-    read MODEL; \
-	@python3 ./components/scoring_engine/main.py \
-		--gcp_project {GCP_PROJECT_ID} \
-		--gcs_location {GCP_BUCKET} \
-		--model_type MODEL
-
-
 # Antidote Model Sidecar - TFX Training in Cloud
-# Requires Kubeflow Endpoint
+
+create-pipeline-cluster:
+	export PIPELINE_CLUSTER_NAME=${TF_VAR_ML_CLUSTER}
+	export PIPELINE_VERSION=1.7.1
+	export ZONE=${TF_VAR_GCP_REGION}
+	export MACHINE_TYPE=${TF_VAR_ML_MACHINE_TYPE}
+	export SCOPES=${TF_VAR_ML_SCOPES}
+
+	gcloud container clusters create $CLUSTER_NAME \
+     	--zone ${ZONE} \
+     	--machine-type ${MACHINE_TYPE} \
+     	--scopes ${SCOPES}
+
+	# Deploy Kubeflow on Cluster 
+
+	export PIPELINE_VERSION=1.7.1
+	kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=${PIPELINE_VERSION}"
+	kubectl wait --for condition=established --timeout=60s crd/applications.app.k8s.io
+	kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/dev?ref=${PIPELINE_VERSION}"
+
+	# Get Pipeline Endpoint
+	gcloud container clusters get-credentials toxicity-pipelines --zone us-central1-a --project ${TF_VAR_GCP_PROJECT_ID}
+	export KUBEFLOW_ENDPOINT = kubectl describe configmap inverse-proxy-config -n kubeflow | grep googleusercontent.com
 
 install-skaffold:
 	curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 \ 
@@ -111,18 +129,22 @@ install-skaffold:
 tfx-create-pipeline:
 	tfx pipeline create \
 		--pipeline-path=kubeflow_dag_runner.py \
-		--endpoint={ENDPOINT} \
+		--endpoint=${KUBEFLOW_ENDPOINT} \
 		--build-image
 
 tfx-update-pipeline:
 	tfx pipeline update \
 		--pipeline-path=kubeflow_dag_runner.py \
-		--endpoint=${ENDPOINT}
+		--endpoint=${KUBEFLOW_ENDPOINT}
 
 tfx-run:
 	tfx run create \
-		--pipeline-name=antidote_pipeline \
-		--endpoint=${ENDPOINT}
+		--pipeline-name=${TF_VAR_ML_PIPELINE_NAME} \
+		--endpoint=${KUBEFLOW_ENDPOINT}
+tfx-list: 
+	tfx pipeline list \
+	--engine=kubeflow \
+	--endpoint=${KUBEFLOW_ENDPOINT}
 
 
 # Antidote Model Sidecar - Model Deployment 

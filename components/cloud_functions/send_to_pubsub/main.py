@@ -14,14 +14,12 @@
 
 import os
 import json
-import datetime,time
+import time
 from google.cloud import storage
 from google.cloud import pubsub_v1
 
-
 gcp_project_id = os.environ['gcp_project_id']
 pubsub_topic   = os.environ['pubsub_topic']
-
 
 def gcp_storage_download_as_string(bucket_name, blob_name):
     '''
@@ -38,6 +36,12 @@ def gcp_storage_download_as_string(bucket_name, blob_name):
     except Exception as e:
         print('[ EXCEPTION ] {}'.format(e))
 
+def pubsub_callback( message_future ):
+    # When timeout is unspecified, the exception method waits indefinitely.
+    if message_future.exception(timeout=30):
+        print('[ ERROR ] Publishing message on {} threw an Exception {}.'.format(topic_name, message_future.exception()))
+    else:
+        print('[ INFO ] Result: {}'.format(message_future.result()))
 
 def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
     '''
@@ -67,10 +71,10 @@ def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
 
 
 def main(event,context):
-    
+    # Get name from Pubsub event payload
     filename = event['name']
-    #username = filename.replace('.txt','')
     
+    # Generate Google Cloud Storage uri
     gcs_uri = 'gs://{}/{}'.format(event['bucket'], event['name'])
     
     print('[ INFO ] Processing {}'.format(gcs_uri))
@@ -78,20 +82,18 @@ def main(event,context):
     
     # Get and enrich payload to send to PubSub
     payload = json.loads(gcs_payload)
+    '''
+    payload = {
+        "username":  "myusername",
+        "timestamp": int(time.time()), # unix timestamp
+        "text":      "my text message"
+     }
+    '''
     if 'timestamp' not in payload:
         payload['timestamp'] = int(time.time())
     
-    '''
-    payload = {
-        "username": username,
-        "timestamp": int(time.time()), # unix timestamp
-        "text": f'{text_blob}'
-     }
-    '''
-    
     # Initialize PubSub Object
-    pubsub_publisher  = pubsub_v1.PublisherClient()
+    pubsub_publisher = pubsub_v1.PublisherClient()
     
     # Write message payload to PubSub
     pubsub_publish( pubsub_publisher, project_id=gcp_project_id, pubsub_topic=pubsub_topic, message=payload )
-
