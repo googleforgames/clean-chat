@@ -151,7 +151,7 @@ tfx-update-pipeline:
 
 tfx-run:
 	tfx run create \
-		--pipeline-name=antidote_pipeline \
+		--pipeline-name=${TF_VAR_ML_PIPELINE_NAME} \
 		--endpoint=${ENDPOINT}
 
 
