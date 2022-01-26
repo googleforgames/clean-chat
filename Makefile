@@ -112,22 +112,23 @@ train-basic:
 # Antidote Model Sidecar - TFX Training in Cloud
 
 create-pipeline-cluster:
-	PIPELINE_CLUSTER_NAME="toxicity-pipeline"
-	ZONE="us-central1-a"
-	MACHINE_TYPE="e2-standard-2" #
-	SCOPES="cloud-platform" 
+	export PIPELINE_CLUSTER_NAME="toxicity-pipeline"
+	export PIPELINE_VERSION=1.7.1
+	export ZONE=${TF_VAR_GCP_REGION}
+	export MACHINE_TYPE=${TF_VAR_ML_MACHINE_TYPE}
+	export SCOPES=${TF_VAR_ML_SCOPES}
 
 	gcloud container clusters create $CLUSTER_NAME \
-     	--zone $ZONE \
-     	--machine-type $MACHINE_TYPE \
-     	--scopes $SCOPES
+     	--zone ${ZONE} \
+     	--machine-type ${MACHINE_TYPE} \
+     	--scopes ${SCOPES}
 
 	# Deploy Kubeflow on Cluster 
 
 	export PIPELINE_VERSION=1.7.1
-	kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=$PIPELINE_VERSION"
+	kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=${PIPELINE_VERSION}"
 	kubectl wait --for condition=established --timeout=60s crd/applications.app.k8s.io
-	kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/dev?ref=$PIPELINE_VERSION"
+	kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/dev?ref=${PIPELINE_VERSION}"
 
 	# Get Pipeline Endpoint
 	gcloud container clusters get-credentials toxicity-pipelines --zone us-central1-a --project ${TF_VAR_GCP_PROJECT_ID}
@@ -140,7 +141,7 @@ install-skaffold:
 tfx-create-pipeline:
 	tfx pipeline create \
 		--pipeline-path=kubeflow_dag_runner.py \
-		--endpoint={KUBEFLOW_ENDPOINT} \
+		--endpoint=${KUBEFLOW_ENDPOINT} \
 		--build-image
 
 tfx-update-pipeline:
