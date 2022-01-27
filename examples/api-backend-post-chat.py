@@ -30,8 +30,8 @@ from concurrent.futures import TimeoutError
 
 project_id      = os.environ.get('TF_VAR_GCP_PROJECT_ID', '')
 cloud_run_name  = os.environ.get('TF_VAR_APP_CLOUD_RUN_NAME', '')
-subscription_id = "antidote-text-scored-sub-pull"
-timeout         = 10.0
+subscription_id = f'''{os.environ.get('TF_VAR_PUBSUB_TOPIC_TEXT_SCORED', '')}-sub-pull'''
+timeout         = 30.0
 
 def get_cloud_run_url(cloud_run_name):
     try:
@@ -104,7 +104,7 @@ def pubsub_subscriber(project_id, subscription_id):
     subscription_path = subscriber.subscription_path(project_id, subscription_id)
     
     def callback(message: pubsub_v1.subscriber.message.Message) -> None:
-        print(f"Received {message}.")
+        print(f"Scored Message: {message.data}")
         message.ack()
     
     streaming_pull_future = subscriber.subscribe(subscription_path, callback=callback)
@@ -124,8 +124,9 @@ def pubsub_subscriber(project_id, subscription_id):
 
 def main():
     
+    # Demo/Example JSON Payload for Text Chat
     post_json ={
-        'text':     'This is not a toxic text message. I hate this test! This is the 3rd and final sentence.',
+        'text':     'This is not a toxic text message. I hate this test!',
         'username': 'user123'
     }
     

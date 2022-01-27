@@ -164,7 +164,7 @@ resource "google_pubsub_topic" "toxic-topic" {
   ]
 }
 
-resource "google_pubsub_subscription" "text-scored-sub" {
+resource "google_pubsub_subscription" "text-scored-sub-push" {
   name  = "${var.PUBSUB_TOPIC_TEXT_SCORED}-sub"
   topic = google_pubsub_topic.text-scored.name
 
@@ -177,6 +177,21 @@ resource "google_pubsub_subscription" "text-scored-sub" {
       x-goog-version = "v1"
     }
   }
+  retry_policy {
+    minimum_backoff = "10s"
+    maximum_backoff = "120s"
+  }
+  depends_on = [
+    google_project_service.gcp_services["pubsub.googleapis.com"]
+  ]
+}
+
+resource "google_pubsub_subscription" "text-scored-sub-pull" {
+  name  = "${var.PUBSUB_TOPIC_TEXT_SCORED}-sub-pull"
+  topic = google_pubsub_topic.text-scored.name
+
+  ack_deadline_seconds = 20
+
   retry_policy {
     minimum_backoff = "10s"
     maximum_backoff = "120s"
