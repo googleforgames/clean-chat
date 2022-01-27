@@ -94,10 +94,18 @@ class ToxicityPipeline(object):
             'text':      'my chat message'
         }
         '''
-        score_payload = scoring_logic.model(event['text'], perspective_apikey)
-        event['score']        = score_payload['score']
-        event['score_detail'] = score_payload
-        return event
+        try:
+            score_payload = scoring_logic.model(event['text'], perspective_apikey)
+            event['score']        = score_payload['score']
+            event['score_detail'] = score_payload
+            return event
+        except Exception as e:
+            print(f'[ Exception ] At score_event. {e}')
+            # Pass a default score.
+            score_payload         = {'score':0.00001}
+            event['score']        = score_payload['score']
+            event['score_detail'] = score_payload
+            return event
     
     def run_pipeline(self, known_args, pipeline_args):
         

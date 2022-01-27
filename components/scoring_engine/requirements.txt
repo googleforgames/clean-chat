@@ -1,4 +1,4 @@
-apache-beam==2.29.0
+apache-beam==2.30.0
 apache-beam[gcp]
 httplib2==0.17.0
 textblob==0.15.3

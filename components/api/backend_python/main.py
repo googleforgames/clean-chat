@@ -167,7 +167,7 @@ def generate_filename(url):
 
 @app.route("/test", methods = ['GET'])
 def test():
-    return f'Hello!', 200
+    return f'Test Successful!', 200
 
 
 @app.route("/audio", methods = ['POST'])
