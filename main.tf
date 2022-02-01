@@ -110,6 +110,12 @@ resource "google_storage_bucket" "gcs-for-cloud-functions" {
   force_destroy = true
 }
 
+resource "google_storage_bucket" "kubeflow-pipeline-root" {
+  name          = "${var.ML_PIPELINE_ROOT}"
+  location      = "US"
+  storage_class = "STANDARD"
+  force_destroy = true
+}
 
 resource "google_storage_bucket" "dataflow-bucket" {
   name          = "${var.GCS_BUCKET_DATAFLOW}"
@@ -128,13 +134,6 @@ resource "google_storage_bucket_object" "dataflow-tmp-setup" {
   name   = "tmp/setup.txt"
   content = "Used for setup"
   bucket = google_storage_bucket.dataflow-bucket.name
-}
-  
-resource "google_storage_bucket_object" "kubeflow-pipeline-root" {
-  name   = "${var.TF_VAR_ML_PIPELINE_ROOT}"
-  location      = "US"
-  storage_class = "STANDARD"
-  force_destroy = true
 }
 
 /******************************************************
