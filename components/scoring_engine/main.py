@@ -61,7 +61,6 @@ class ToxicityPipeline(object):
         return bq_payload
     
     def avg_by_group(self, tuple):
-        print(f'[ DEBUG ] avg_by_group tuple = {tuple}')
         (k,v) = tuple
         return {"username":k, "score": sum([record['score'] for record in v])/len(v)} 
     
@@ -107,6 +106,18 @@ class ToxicityPipeline(object):
             event['score_detail'] = score_payload
             return event
     
+    def result_post_processing(self, event):
+        # If the text variable is greater than X characters, then do not 
+        # send as part of the response payload. This has been added to 
+        # control for, and limit, large text payloads from being sent as 
+        # part of the response. This condition can be removed if it's 
+        # desirable to receive text (no matter the size) as part of the 
+        # response payload.
+        if len(event['text']) > 1000:
+            event = {k:v for k,v in event.items() if k not in 'text'}
+        
+        return event
+    
     def run_pipeline(self, known_args, pipeline_args):
         
         pipeline_options = PipelineOptions(pipeline_args)
@@ -133,9 +144,6 @@ class ToxicityPipeline(object):
                 raw_events  | 'parsed events' >> beam.Map(self.parse_pubsub)
                             | 'set_timestamp' >> beam.Map(lambda x: window.TimestampedValue(x, x['timestamp']))
             )
-            
-            # Print results to console (for testing/debugging)
-            #parsed_events | 'print parsed_events' >> beam.Map(print)
             
             score_events = (
                 parsed_events   | 'score events' >> beam.Map(self.score_event)
@@ -168,8 +176,9 @@ class ToxicityPipeline(object):
             
             # Write scored events to PubSub (where it can be pushed to a designed endpoint URL)
             (
-            score_events | 'convert scored msg'    >> beam.Map(self.convert_to_bytestring)
-                        | 'write to scored topic' >> beam.io.WriteToPubSub(known_args.pubsub_topic_text_scored)
+            score_events | 'results post-processing' >> beam.Map(self.result_post_processing)
+                         | 'convert scored msg'      >> beam.Map(self.convert_to_bytestring)
+                         | 'write to scored topic'   >> beam.io.WriteToPubSub(known_args.pubsub_topic_text_scored)
             )
             
             # Write all events into BigQuery (for analysis and model retraining)
@@ -209,14 +218,16 @@ if __name__ == '__main__':
     
     # Set GOOGLE_CLOUD_PROJECT environ variable
     if known_args.gcp_project is None:
-        print("Variable 'gcp_project' not set")
+        print("[ ERROR ] The 'gcp_project' argument is not set as an input parameter.")
         sys.exit()
     else:
         os.environ['GOOGLE_CLOUD_PROJECT']=known_args.gcp_project
     
-    # Set toxic user threshold value
+    # Load Toxic threshold parameter
     toxic_user_threshold = known_args.toxic_user_threshold
-    perspective_apikey = known_args.perspective_apikey
+    
+    # Load Perspective API (optional: only used if using Perspective API)
+    perspective_apikey   = known_args.perspective_apikey
     
     pipeline_args.extend([
         '--runner={}'.format(known_args.runner),                          # DataflowRunner or DirectRunner (local)
@@ -232,6 +243,6 @@ if __name__ == '__main__':
     
     # Instantiate Beam Pipeline
     ToxPipeline = ToxicityPipeline()
+    
     # Run Pipeline
     ToxPipeline.run_pipeline(known_args, pipeline_args)
-
