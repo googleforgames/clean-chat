@@ -34,14 +34,14 @@ help:
 	@echo "Deploy realtime Scoring Engine in Interactive Mode (testing/debugging)"
 	@echo "    make deploy-scoring-engine-interactive"
 	@echo ""
-	@echo "Deploy API Endpoints"
-	@echo "    make deploy-endpoints"
+	@echo "Deploy Backend API"
+	@echo "    make deploy-backend-api"
 	@echo ""
 	@echo "Delete Services"
 	@echo "    make destroy-all"
 	@echo ""
 
-deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
+deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-backend-api
 
 # APIs should be enabled as part of the Terraform deployment. 
 # This make target can be used as an alternative way to enable 
@@ -86,7 +86,7 @@ destroy-all: destroy-backend-api destroy-scoring-engine destroy-terraform
 destroy-backend-api:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	@echo "Shutting down and deleting the Backend API Service"
-	gcloud run services delete ${TF_VAR_APP_CLOUD_RUN_NAME} --region ${TF_VAR_APP_CLOUD_RUN_REGION} --no-async
+	./components/api/backend_python/destroy_backend_api.sh
 
 destroy-scoring-engine:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
