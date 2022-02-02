@@ -84,7 +84,7 @@ def main(event,context):
     payload = json.loads(gcs_payload)
     '''
     payload = {
-        "username":  "myusername",
+        "userid":    "myusername",
         "timestamp": int(time.time()), # unix timestamp
         "text":      "my text message"
      }

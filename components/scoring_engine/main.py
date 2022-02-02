@@ -33,7 +33,7 @@ class ToxicityPipeline(object):
     '''Dataflow Pipeline and Supporting Methods for Aggregating Toxicity Scores'''
     def __init__(self, **kwargs):
         self.bq_schema = {'fields': [
-            {'name': 'username',       'type': 'STRING',  'mode': 'NULLABLE'},
+            {'name': 'userid',         'type': 'STRING',  'mode': 'NULLABLE'},
             {'name': 'timestamp',      'type': 'INTEGER', 'mode': 'NULLABLE'},
             {'name': 'text',           'type': 'STRING',  'mode': 'NULLABLE'},
             {'name': 'score',          'type': 'FLOAT64', 'mode': 'NULLABLE'}
@@ -49,12 +49,12 @@ class ToxicityPipeline(object):
         return json_payload
     
     def preprocess_event(self, event):
-        return ((event['username']), event)
+        return ((event['userid']), event)
     
     def bq_preprocessing(self, event):
         bq_payload = {
             'timestamp': event['timestamp'],
-            'username':  event['username'],
+            'userid':    event['userid'],
             'text':      event['text'],
             'score':     event['score'],
         }
@@ -62,7 +62,7 @@ class ToxicityPipeline(object):
     
     def avg_by_group(self, tuple):
         (k,v) = tuple
-        return {"username":k, "score": sum([record['score'] for record in v])/len(v)} 
+        return {"userid":k, "score": sum([record['score'] for record in v])/len(v)} 
     
     def convert_to_bytestring(self, event):
         try:
@@ -75,20 +75,20 @@ class ToxicityPipeline(object):
         
         send_toxic_signal = False
         
-        if event['username'] not in toxic_usernames:    
+        if event['userid'] not in toxic_usernames:    
             if event['score'] >= float(toxic_user_threshold):
                 send_toxic_signal = True
-                toxic_usernames.add(event['username'])
+                toxic_usernames.add(event['userid'])
         else:
             if event['score'] < float(toxic_user_threshold):
-                toxic_usernames.remove(event['username'])
+                toxic_usernames.remove(event['userid'])
         
         return send_toxic_signal
     
     def score_event(self, event):
         '''
         event = {
-            'username':  'user123',
+            'userid':    'user123',
             'timestamp': '20210804 11:22:46.222708',
             'text':      'my chat message'
         }

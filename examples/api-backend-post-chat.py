@@ -127,7 +127,7 @@ def main():
     # Demo/Example JSON Payload for Text Chat
     post_json ={
         'text':     'This is not a toxic text message. I hate this test!',
-        'username': 'user123'
+        'userid':   'user123'
     }
     
     # Set IAM Policy Binding

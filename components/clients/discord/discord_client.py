@@ -65,7 +65,7 @@ if __name__ == "__main__":
         if message.content == 'hi all':
                 payload = {
                     #'id': message.id,
-                    'username': message.author.name,
+                    'userid': message.author.name,
                     #'discriminator': message.author.discriminator,
                     'text': message.content,
                     'timestamp': time.mktime(message.created_at.timetuple()), # unix timestamp
@@ -86,7 +86,7 @@ if __name__ == "__main__":
                     
                     payload = {
                         #'id': message.id,
-                        'username': discord_client.user.name,
+                        'userid': discord_client.user.name,
                         #'discriminator': message.author.discriminator,
                         'text': responses[i],
                         'timestamp': time.mktime(message.created_at.timetuple()), # unix timestamp

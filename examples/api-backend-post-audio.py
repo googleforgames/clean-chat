@@ -128,7 +128,7 @@ def main():
     # Alternative URL for audio testing: https://github.com/zaratsian/Datasets/raw/master/test_audio.mp3
     post_json ={
         'audio_uri': 'https://github.com/googleforgames/antidote/raw/master/assets/test_audio.mp3',
-        'username':  'user123'
+        'userid':    'user123'
     }
     
     # Set IAM Policy Binding
