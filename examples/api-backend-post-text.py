@@ -13,7 +13,7 @@
 # limitations under the License.
 
 '''
-Example call to API Backend - /chat
+Example call to API Backend - /text
 '''
 
 import os
@@ -141,7 +141,7 @@ def main():
     # Test the API Call to the deployed Backend service running on Cloud Run
     if cloud_run_url != '':
         
-        service_url = f'{cloud_run_url}/chat'
+        service_url = f'{cloud_run_url}/text'
         
         print(f'Executing POST request for {service_url}')
         print(f'POST Payload:\n{json.dumps(post_json,indent=4)}\n')
