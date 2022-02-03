@@ -238,34 +238,7 @@ resource "google_bigquery_dataset" "bigquery_dataset" {
 resource "google_bigquery_table" "bigquery_table_scored" {
   dataset_id = google_bigquery_dataset.bigquery_dataset.dataset_id
   table_id   = "${var.BIGQUERY_TABLE}"
-  schema = <<EOF
-[
-    {
-        "name": "username",
-        "type": "STRING",
-        "mode": "NULLABLE",
-        "description": "unique username or user id"
-    },
-    {
-        "name": "timestamp",
-        "type": "INT64",
-        "mode": "NULLABLE",
-        "description": "Unix timestamp"
-    },
-    {
-        "name": "text",
-        "type": "STRING",
-        "mode": "NULLABLE",
-        "description": "text comment string"
-    },
-    {
-        "name": "score",
-        "type": "FLOAT64",
-        "mode": "NULLABLE",
-        "description": "toxicity score"
-    }
-]
-EOF
+  schema     = file("./schema/bigquery_schema_scored_chats.json")
 }
 
 /******************************************************
