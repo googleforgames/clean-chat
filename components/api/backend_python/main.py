@@ -122,7 +122,7 @@ def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
     except Exception as e:
         print('[ ERROR ] {}'.format(e))
 
-def download_online_file(response, saved_filename):
+def download_remote_file(response, saved_filename):
     '''
     "response" comes from requests.get or request.post response
     '''
@@ -191,17 +191,17 @@ def test():
 def audio():
     if request.method == 'POST':
         try:
-            '''# Payload should look like this
-            {
-                'userid':    'user123',
-                'audio_uri': 'https://mypath/audio.wav',
-            }
-            '''
-            payload   = request.get_json()
-            audio_uri = payload['audio_uri']
+            payload = request.get_json()
             print(f'''[ INFO ] User-provided payload: {payload}''')
             
+            # Add timestamp to payload if it does not exist
+            timestamp_int = int(time.time())
+            if 'timestamp' not in payload:
+                payload['timestamp'] = timestamp_int
+            
+            audio_uri = payload['audio_uri']
             print(f'[ INFO ] /audio requesting audio file from {audio_uri}')
+
             response = requests.get(audio_uri)
             print(f'[ INFO ] Requested audio file. Status code: {response.status_code}')
             
@@ -212,7 +212,7 @@ def audio():
                 # Write audio to GCS so that STT can be ran against this file.
                 if True: # re.search('\.mp3$',audio_filename):
                     # Save audio file
-                    download_online_file(response=response, saved_filename=audio_filename)
+                    download_remote_file(response=response, saved_filename=audio_filename)
                     
                     # Get Audio file length
                     audio_file_duration_in_secs = get_audio_duration(audio_file=audio_filename)
@@ -242,15 +242,13 @@ def audio():
                     print(f'[ INFO ] Writing {audio_payload_filename} to GCS')
                     gcp_storage_upload(source_type='string', source=json.dumps(payload), bucket_name=bucket_name, blob_name=audio_payload_filename)
                     
-                    # Return Status
+                    # Send Response - Short Audio file (less than 60 seconds)
                     if audio_file_duration_in_secs < 60:
-                        #sentences = speech_to_text_short(gcs_uri=gcs_uri)
-                        #transcript = ' '.join(sentences)
-                        msg = f'''{audio_uri} has been processed.'''                        
+                        msg = f'''{audio_uri} has been processed as a short audio file.'''                        
                         print(f'''[ INFO ] {msg}''')
                         return msg, 201
+                    # Send Response - Long Audio file (over 60 seconds)
                     else:
-                        #speech_to_text_long(gcs_uri=gcs_uri)
                         msg = f'''{audio_uri} is being process as a long audio file.'''
                         print(f'''[ INFO ] {msg}''')
                         return msg, 201
@@ -275,20 +273,22 @@ def audio():
 def text():
     if request.method == 'POST':
         try:
-            '''# Payload should look like this
-            {
-                'userid':    'user123',
-                'text':      'test text message'
-            }
-            '''
             payload = request.get_json()
             print(f'''[ INFO ] Request payload: {payload}''')
+            
+            # Add timestamp to payload if it does not exist
+            timestamp_int = int(time.time())
+            if 'timestamp' not in payload:
+                payload['timestamp'] = timestamp_int
             
             # Write to the text dropzone in GCS
             bucket_name = gcs_bucket_text
             if 'userid' in payload:
-                payload_filename = f"{payload['userid'].lower()}_{int(time.time())}.json"
+                payload_filename = f"{payload['userid'].lower()}_{timestamp_int}.json"
+            else:
+                payload_filename = f"{timestamp_int}.json"                
             
+            # Write payload to Google Cloud Storage
             gcp_storage_upload(source_type='string', source=json.dumps(payload), bucket_name=bucket_name, blob_name=payload_filename)
             
             return 'Success', 201
