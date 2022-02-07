@@ -15,7 +15,10 @@
 echo "Cancelling Dataflow Job in 3 seconds"
 sleep 3
 
-DATAFLOW_JOB_ID=$(gcloud dataflow jobs list --region ${TF_VAR_DATAFLOW_REGION} --filter "name=antidote-scoring-engine" --filter "state=Running" --format "value(JOB_ID)") && \
+DATAFLOW_JOB_ID=$(gcloud dataflow jobs list --region ${TF_VAR_DATAFLOW_REGION} --filter "name=antidote-scoring-engine" --filter "state=Running" --format "value(JOB_ID)")
 
-echo "Cancelling job ID ${DATAFLOW_JOB_ID}"
-gcloud dataflow jobs cancel --region ${TF_VAR_DATAFLOW_REGION} ${DATAFLOW_JOB_ID}
+if [[ $DATAFLOW_JOB_ID != "" ]]
+then
+    echo "Cancelling job ID ${DATAFLOW_JOB_ID}"
+    gcloud dataflow jobs cancel --region ${TF_VAR_DATAFLOW_REGION} ${DATAFLOW_JOB_ID}
+fi
