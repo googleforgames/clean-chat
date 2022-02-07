@@ -68,7 +68,7 @@ class Cohere(object, key):
 		labels  = list(data.iloc[:,0].values)
 
 		# Embedding Data
-		embeddings = self.batch_embed(examples=train_text, batch_size=5, model_id='small-20211115')
+		embeddings = self.batch_embed(examples=sentences, batch_size=5, model_id='small-20211115')
 
 		return embeddings, labels
 
