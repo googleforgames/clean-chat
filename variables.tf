@@ -95,3 +95,7 @@ variable "BIGQUERY_TABLE" {
 variable "BIGQUERY_LOCATION" { 
     default = ""
 }
+
+variable "ML_PIPELINE_ROOT" { 
+    default = ""
+}

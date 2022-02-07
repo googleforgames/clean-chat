@@ -34,14 +34,14 @@ help:
 	@echo "Deploy realtime Scoring Engine in Interactive Mode (testing/debugging)"
 	@echo "    make deploy-scoring-engine-interactive"
 	@echo ""
-	@echo "Deploy API Endpoints"
-	@echo "    make deploy-endpoints"
+	@echo "Deploy Backend API"
+	@echo "    make deploy-backend-api"
 	@echo ""
 	@echo "Delete Services"
 	@echo "    make destroy-all"
 	@echo ""
 
-deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-endpoints
+deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-backend-api
 
 # APIs should be enabled as part of the Terraform deployment. 
 # This make target can be used as an alternative way to enable 
@@ -67,22 +67,6 @@ terraform-apply:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
 	terraform apply
 
-destroy-all: destroy-backend-api destroy-scoring-engine destroy-terraform
-
-destroy-backend-api:
-	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
-	@echo "Shutting down and deleting the Backend API Service"
-	gcloud run services delete ${TF_VAR_APP_CLOUD_RUN_NAME} --region ${TF_VAR_APP_CLOUD_RUN_REGION} --no-async
-
-destroy-scoring-engine:
-	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
-	./components/scoring_engine/cancel-dataflow-job.sh
-
-destroy-terraform:
-	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
-	@echo "Shutting down and deleting all Terraform deployed services"
-	terraform destroy
-
 deploy-scoring-engine:
 	@echo "Deploying Antidote Scoring Engine."
 	@echo "This may take a few minutes."
@@ -93,9 +77,25 @@ deploy-scoring-engine-interactive:
 	@echo "Deploying Antidote Scoring Engine (in interactive mode)"
 	./components/scoring_engine/deploy-scoring-engine-interactive.sh
 
-deploy-endpoints:
+deploy-backend-api:
 	@echo "Deploying API backend app"
 	./components/api/backend_python/deploy_cloud_run_for_backend.sh
+
+destroy-all: destroy-backend-api destroy-scoring-engine destroy-terraform
+
+destroy-backend-api:
+	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
+	@echo "Shutting down and deleting the Backend API Service"
+	./components/api/backend_python/destroy_backend_api.sh
+
+destroy-scoring-engine:
+	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
+	./components/scoring_engine/cancel-dataflow-job.sh
+
+destroy-terraform:
+	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
+	@echo "Shutting down and deleting all Terraform deployed services"
+	terraform destroy
 
 # Antidote Model Sidecar - TFX Training in Cloud
 

@@ -1,15 +1,15 @@
 [
     {
-        "name": "username",
+        "name": "userid",
         "type": "STRING",
         "mode": "NULLABLE",
-        "description": "unique username or user id"
+        "description": "user identifier"
     },
     {
         "name": "timestamp",
         "type": "INT64",
         "mode": "NULLABLE",
-        "description": "Unix timestamp"
+        "description": "unix timestamp"
     },
     {
         "name": "text",

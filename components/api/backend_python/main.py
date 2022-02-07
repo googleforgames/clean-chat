@@ -29,6 +29,7 @@ from google.cloud import pubsub_v1
 
 app = Flask(__name__)
 
+# Load env variables
 project_id             = os.environ['TF_VAR_GCP_PROJECT_ID']
 gcs_bucket_audio_short = os.environ['TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_SHORT']
 gcs_bucket_audio_long  = os.environ['TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_LONG']
@@ -45,28 +46,26 @@ pubsub_topic           = pubsub_topic.replace('"','')
 # Initialize Clients
 speech_client    = speech.SpeechClient()
 pubsub_publisher = pubsub_v1.PublisherClient()
+storage_client   = storage.Client()
 
-def gcp_storage_upload_string(source_string, bucket_name, blob_name):
-    print(f'[ DEBUG ] gcp_storage_upload_string received {bucket_name} and {blob_name}')
+def gcp_storage_upload(source_type, source, bucket_name, blob_name, ):
+    '''
+        source_type:  Either "string" or "filename"
+        source:       String to upload, or filename containing the data to upload.
+        bucket_name:  Name of the Google Cloud Storage bucket
+        blob_name:    Name of the Google Cloud Storage blob
+    '''
     try:
-        storage_client = storage.Client()
         bucket = storage_client.get_bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-        blob.upload_from_string(source_string)
-        print(f'[ INFO ] Uploaded {blob_name} as string to GCS bucket {bucket_name}')
+        blob   = bucket.blob(blob_name)
+        if source_type.lower() == 'string':
+            blob.upload_from_string(source)
+            print(f'[ INFO ] Uploaded {blob_name} as string to GCS bucket {bucket_name}')
+        elif source_type.lower() == 'filename':
+            blob.upload_from_filename(source)
+            print(f'[ INFO ] Uploaded file {blob_name} to GCS bucket {bucket_name}')
     except Exception as e:
-        print(f'[ ERROR ] gcp_storage_upload_string.Failed to upload to GCS. {e}')
-
-def gcp_storage_upload_filename(filename, bucket_name, blob_name):
-    print(f'[ DEBUG ] gcp_storage_upload_string received {bucket_name} and {blob_name}')
-    try:
-        storage_client = storage.Client()
-        bucket = storage_client.get_bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-        blob.upload_from_filename(filename)
-        print(f'[ INFO ] Uploaded file {blob_name} to GCS bucket {bucket_name}')
-    except Exception as e:
-        print(f'[ ERROR ] gcp_storage_upload_filename. Failed to upload to GCS. {e}')
+        print(f'[ ERROR ] gcp_storage_upload. Failed to upload to GCS. {e}')
 
 def speech_to_text_short(gcs_uri):
     '''
@@ -88,13 +87,6 @@ def speech_to_text_short(gcs_uri):
     
     return sentences
 
-def pubsub_callback( message_future ):
-    # When timeout is unspecified, the exception method waits indefinitely.
-    if message_future.exception(timeout=30):
-        print('[ ERROR ] Publishing message on {} threw an Exception {}.'.format(topic_name, message_future.exception()))
-    else:
-        print('[ INFO ] Result: {}'.format(message_future.result()))
-
 def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
     '''
         Pub/Sub Publish Message
@@ -108,6 +100,13 @@ def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
         
     '''
     try:
+        def pubsub_callback( message_future ):
+            # When timeout is unspecified, the exception method waits indefinitely.
+            if message_future.exception(timeout=30):
+                print('[ ERROR ] Publishing message on {} threw an Exception {}.'.format(topic_name, message_future.exception()))
+            else:
+                print('[ INFO ] Result: {}'.format(message_future.result()))
+        
         # Initialize PubSub Path
         pubsub_topic_path = pubsub_publisher.topic_path( project_id, pubsub_topic )
         
@@ -123,7 +122,7 @@ def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
     except Exception as e:
         print('[ ERROR ] {}'.format(e))
 
-def download_online_file(response, saved_filename):
+def download_remote_file(response, saved_filename):
     '''
     "response" comes from requests.get or request.post response
     '''
@@ -165,27 +164,44 @@ def generate_filename(url):
     return filename
 
 
+#############################################################
+#
+#   Routes
+#
+#############################################################
+
+
+# Test Endpoint. 
+# Used for testing, debugging, or could 
+# even be used for service up-time checks.
 @app.route("/test", methods = ['GET'])
 def test():
-    return f'Hello!', 200
+    return f'Test Successful!', 200
 
 
+# Audio Endpoint.
+# Accepts audio payloads as a POST message, 
+# with the following structure:
+#
+#   {
+#     'userid':    'user123',
+#     'audio_uri': 'https://mypath/audio.wav',
+#   }
 @app.route("/audio", methods = ['POST'])
 def audio():
     if request.method == 'POST':
         try:
-            '''# Payload should look like this
-            {
-                'timestamp': 1639163163,
-                'username':  'user123',
-                'audio_uri': 'https://mypath/audio.wav',
-            }
-            '''
-            payload   = request.get_json()
-            audio_uri = payload['audio_uri']
+            payload = request.get_json()
             print(f'''[ INFO ] User-provided payload: {payload}''')
             
+            # Add timestamp to payload if it does not exist
+            timestamp_int = int(time.time())
+            if 'timestamp' not in payload:
+                payload['timestamp'] = timestamp_int
+            
+            audio_uri = payload['audio_uri']
             print(f'[ INFO ] /audio requesting audio file from {audio_uri}')
+
             response = requests.get(audio_uri)
             print(f'[ INFO ] Requested audio file. Status code: {response.status_code}')
             
@@ -196,7 +212,7 @@ def audio():
                 # Write audio to GCS so that STT can be ran against this file.
                 if True: # re.search('\.mp3$',audio_filename):
                     # Save audio file
-                    download_online_file(response=response, saved_filename=audio_filename)
+                    download_remote_file(response=response, saved_filename=audio_filename)
                     
                     # Get Audio file length
                     audio_file_duration_in_secs = get_audio_duration(audio_file=audio_filename)
@@ -210,13 +226,13 @@ def audio():
                     
                     # Upload raw (initial) audio file
                     print(f'[ INFO ] Processing audio file called  {audio_filename}')
-                    gcp_storage_upload_string(response.content, bucket_name=bucket_name, blob_name=audio_filename)
+                    gcp_storage_upload(source_type='string', source=response.content, bucket_name=bucket_name, blob_name=audio_filename)
                     # Convert mp3 to flac
                     audio_filename_flac = re.sub('\.[a-z0-9]+$','.flac',audio_filename.lower())
                     print(f'[ INFO ] Running {audio_filename} through FFMPEG to generate {audio_filename_flac}')
                     subprocess.call(['ffmpeg', '-i', audio_filename, '-ac', '1', audio_filename_flac])
                     print(f'[ INFO ] Uploading processed audio file {audio_filename_flac} (as flac) to gs://{bucket_name}')
-                    gcp_storage_upload_filename(filename=audio_filename_flac, bucket_name=bucket_name, blob_name=audio_filename_flac)
+                    gcp_storage_upload(source_type='filename', source=audio_filename_flac, bucket_name=bucket_name, blob_name=audio_filename_flac)
                     
                     # GCS Path
                     gcs_uri = f'gs://{bucket_name}/{audio_filename_flac}'
@@ -224,17 +240,15 @@ def audio():
                     # Write audio payload/metadata to GCS
                     audio_payload_filename = re.sub('\.[a-z0-9]+$', '.json', audio_filename)
                     print(f'[ INFO ] Writing {audio_payload_filename} to GCS')
-                    gcp_storage_upload_string(json.dumps(payload), bucket_name=bucket_name, blob_name=audio_payload_filename)
+                    gcp_storage_upload(source_type='string', source=json.dumps(payload), bucket_name=bucket_name, blob_name=audio_payload_filename)
                     
-                    # Return Status
+                    # Send Response - Short Audio file (less than 60 seconds)
                     if audio_file_duration_in_secs < 60:
-                        #sentences = speech_to_text_short(gcs_uri=gcs_uri)
-                        #transcript = ' '.join(sentences)
-                        msg = f'''{audio_uri} has been processed.'''                        
+                        msg = f'''{audio_uri} has been processed as a short audio file.'''                        
                         print(f'''[ INFO ] {msg}''')
                         return msg, 201
+                    # Send Response - Long Audio file (over 60 seconds)
                     else:
-                        #speech_to_text_long(gcs_uri=gcs_uri)
                         msg = f'''{audio_uri} is being process as a long audio file.'''
                         print(f'''[ INFO ] {msg}''')
                         return msg, 201
@@ -247,24 +261,35 @@ def audio():
             return '', 401
 
 
-@app.route("/chat", methods = ['POST'])
-def chat():
+# Text Chat Endpoint.
+# Accepts text chat payloads as a POST message, 
+# with the following structure:
+#
+#   {
+#     'userid':    'user123',
+#     'text':      'test text message'
+#   }
+@app.route("/text", methods = ['POST'])
+def text():
     if request.method == 'POST':
         try:
-            '''# Payload should look like this
-            {
-                'timestamp': 1639163163,
-                'username':  'user123',
-                'text':      'test text message',
-            }
-            '''
             payload = request.get_json()
-            print(f'''[ INFO ] User-provided payload: {payload}''')
+            print(f'''[ INFO ] Request payload: {payload}''')
+            
+            # Add timestamp to payload if it does not exist
+            timestamp_int = int(time.time())
+            if 'timestamp' not in payload:
+                payload['timestamp'] = timestamp_int
             
             # Write to the text dropzone in GCS
             bucket_name = gcs_bucket_text
-            payload_filename = f"{payload['username'].lower()}_{int(time.time())}.json"
-            gcp_storage_upload_string(json.dumps(payload), bucket_name=bucket_name, blob_name=payload_filename)
+            if 'userid' in payload:
+                payload_filename = f"{payload['userid'].lower()}_{timestamp_int}.json"
+            else:
+                payload_filename = f"{timestamp_int}.json"                
+            
+            # Write payload to Google Cloud Storage
+            gcp_storage_upload(source_type='string', source=json.dumps(payload), bucket_name=bucket_name, blob_name=payload_filename)
             
             return 'Success', 201
         except Exception as e:
@@ -272,13 +297,15 @@ def chat():
             return '', 401
 
 
-@app.route("/antidote_callback", methods = ['POST'])
-def antidote_callback():
+# Callback send a scored message to the 
+# specified callback uri
+@app.route("/callback", methods = ['POST'])
+def callback():
     if request.method == 'POST':
         try:
-            print('[ INFO ] Starting Antidote Callback')
+            print('[ INFO ] Starting Callback')
             payload = request.get_json()
-            print(f'[ INFO ] antidote_callback payload: {payload}')
+            print(f'[ INFO ] callback payload: {payload}')
             
             payload_decoded = json.loads(base64.b64decode(payload['message']['data']).decode('utf-8'))
             callback_url = payload_decoded['callback_url']
@@ -286,7 +313,7 @@ def antidote_callback():
             print(f'[ INFO ] Status code from callback_url: {r.status_code}')
             return 'Success', 201
         except Exception as e:
-            print(f'[ EXCEPTION ] At /antidote_callback. {e}')
+            print(f'[ EXCEPTION ] At /callback. {e}')
             return 'Bad Request', 401
 
 

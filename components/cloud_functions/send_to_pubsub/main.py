@@ -18,8 +18,10 @@ import time
 from google.cloud import storage
 from google.cloud import pubsub_v1
 
+
 gcp_project_id = os.environ['gcp_project_id']
 pubsub_topic   = os.environ['pubsub_topic']
+
 
 def gcp_storage_download_as_string(bucket_name, blob_name):
     '''
@@ -36,12 +38,6 @@ def gcp_storage_download_as_string(bucket_name, blob_name):
     except Exception as e:
         print('[ EXCEPTION ] {}'.format(e))
 
-def pubsub_callback( message_future ):
-    # When timeout is unspecified, the exception method waits indefinitely.
-    if message_future.exception(timeout=30):
-        print('[ ERROR ] Publishing message on {} threw an Exception {}.'.format(topic_name, message_future.exception()))
-    else:
-        print('[ INFO ] Result: {}'.format(message_future.result()))
 
 def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
     '''
@@ -55,6 +51,13 @@ def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
         pubsub_publisher  = pubsub_v1.PublisherClient()
     '''
     try:
+        def pubsub_callback( message_future ):
+            # When timeout is unspecified, the exception method waits indefinitely.
+            if message_future.exception(timeout=30):
+                print('[ ERROR ] Publishing message on {} threw an Exception {}.'.format(topic_name, message_future.exception()))
+            else:
+                print('[ INFO ] Result: {}'.format(message_future.result()))
+        
         # Initialize PubSub Path
         pubsub_topic_path = pubsub_publisher.topic_path( project_id, pubsub_topic )
         
@@ -62,17 +65,38 @@ def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
         if type( message ) is dict:
             message = json.dumps( message )
         
+        if type(message) is not bytes:
+            message = message.encode('utf-8')
+        
         # When you publish a message, the client returns a Future.
-        #message_future = pubsub_publisher.publish(pubsub_topic_path, data=message.encode('utf-8'), attribute1='myattr1', anotherattr='myattr2')
-        message_future = pubsub_publisher.publish(pubsub_topic_path, data=message.encode('utf-8') )
+        message_future = pubsub_publisher.publish(pubsub_topic_path, data=message )
         message_future.add_done_callback( pubsub_callback )
     except Exception as e:
         print('[ EXCEPTION ] {}'.format(e))
 
 
+def parse_sentence_lightweight(text):
+    import re
+    sentences = re.split('\. |\? |\! ', text)
+    sentences = [sent for sent in sentences if sent!=None and len(sent)>=3]
+    return sentences
+
+
+def parse_sentence_nltk(text):
+    import nltk
+    nltk.download('punkt')
+    sentences = nltk.tokenize.sent_tokenize(text)
+    sentences = [sent for sent in sentences if sent!=None and len(sent)>=3]
+    return sentences
+
+
 def main(event,context):
-    # Get name from Pubsub event payload
+    
+    # Parse input event parameters
     filename = event['name']
+    
+    # Initialize PubSub Object
+    pubsub_publisher = pubsub_v1.PublisherClient()
     
     # Generate Google Cloud Storage uri
     gcs_uri = 'gs://{}/{}'.format(event['bucket'], event['name'])
@@ -84,16 +108,21 @@ def main(event,context):
     payload = json.loads(gcs_payload)
     '''
     payload = {
-        "username":  "myusername",
+        "userid":    "myusername",
         "timestamp": int(time.time()), # unix timestamp
         "text":      "my text message"
-     }
+    }
     '''
     if 'timestamp' not in payload:
         payload['timestamp'] = int(time.time())
     
-    # Initialize PubSub Object
-    pubsub_publisher = pubsub_v1.PublisherClient()
+    # Split text into sentences prior to sending to scoring engine
+    original_text = payload['text']
+    sentences     = parse_sentence_lightweight(original_text)
     
-    # Write message payload to PubSub
-    pubsub_publish( pubsub_publisher, project_id=gcp_project_id, pubsub_topic=pubsub_topic, message=payload )
+    for sentence in sentences:
+        sentence_payload = payload
+        sentence_payload['text'] = sentence
+        
+        # Write message payload to PubSub
+        pubsub_publish( pubsub_publisher, project_id=gcp_project_id, pubsub_topic=pubsub_topic, message=sentence_payload )

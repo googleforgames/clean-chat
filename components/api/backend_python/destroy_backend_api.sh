@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Cancelling Dataflow Job in 3 seconds"
-sleep 3
+# Get Running Cloud Run Service
+RUNNING_CLOUD_RUN_SERVICE=$(gcloud run services list --format='value(metadata.name)' --filter metadata.name="${TF_VAR_APP_CLOUD_RUN_NAME}")
 
-DATAFLOW_JOB_ID=$(gcloud dataflow jobs list --region ${TF_VAR_DATAFLOW_REGION} --filter "name=antidote-scoring-engine" --filter "state=Running" --format "value(JOB_ID)")
-
-if [[ $DATAFLOW_JOB_ID != "" ]]
+if [[ $TF_VAR_APP_CLOUD_RUN_NAME ]] && [[ $RUNNING_CLOUD_RUN_SERVICE == ${TF_VAR_APP_CLOUD_RUN_NAME} ]]
 then
-    echo "Cancelling job ID ${DATAFLOW_JOB_ID}"
-    gcloud dataflow jobs cancel --region ${TF_VAR_DATAFLOW_REGION} ${DATAFLOW_JOB_ID}
+    echo "Shutting down $TF_VAR_APP_CLOUD_RUN_NAME Cloud Run service in 3 seconds."
+    sleep 3
+    gcloud run services delete ${TF_VAR_APP_CLOUD_RUN_NAME} --region ${TF_VAR_APP_CLOUD_RUN_REGION} --no-async
+else
+    echo "[ WARNING ] TF_VAR_APP_CLOUD_RUN_NAME variable not set or serivice is not running."
 fi

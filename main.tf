@@ -110,6 +110,12 @@ resource "google_storage_bucket" "gcs-for-cloud-functions" {
   force_destroy = true
 }
 
+resource "google_storage_bucket" "kubeflow-pipeline-root" {
+  name          = "${var.ML_PIPELINE_ROOT}"
+  location      = "US"
+  storage_class = "STANDARD"
+  force_destroy = true
+}
 
 resource "google_storage_bucket" "dataflow-bucket" {
   name          = "${var.GCS_BUCKET_DATAFLOW}"
@@ -128,13 +134,6 @@ resource "google_storage_bucket_object" "dataflow-tmp-setup" {
   name   = "tmp/setup.txt"
   content = "Used for setup"
   bucket = google_storage_bucket.dataflow-bucket.name
-}
-  
-resource "google_storage_bucket_object" "kubeflow-pipeline-root" {
-  name   = "${var.TF_VAR_ML_PIPELINE_ROOT}"
-  location      = "US"
-  storage_class = "STANDARD"
-  force_destroy = true
 }
 
 /******************************************************
@@ -164,7 +163,7 @@ resource "google_pubsub_topic" "toxic-topic" {
   ]
 }
 
-resource "google_pubsub_subscription" "text-scored-sub" {
+resource "google_pubsub_subscription" "text-scored-sub-push" {
   name  = "${var.PUBSUB_TOPIC_TEXT_SCORED}-sub"
   topic = google_pubsub_topic.text-scored.name
 
@@ -177,6 +176,21 @@ resource "google_pubsub_subscription" "text-scored-sub" {
       x-goog-version = "v1"
     }
   }
+  retry_policy {
+    minimum_backoff = "10s"
+    maximum_backoff = "120s"
+  }
+  depends_on = [
+    google_project_service.gcp_services["pubsub.googleapis.com"]
+  ]
+}
+
+resource "google_pubsub_subscription" "text-scored-sub-pull" {
+  name  = "${var.PUBSUB_TOPIC_TEXT_SCORED}-sub-pull"
+  topic = google_pubsub_topic.text-scored.name
+
+  ack_deadline_seconds = 20
+
   retry_policy {
     minimum_backoff = "10s"
     maximum_backoff = "120s"
@@ -224,34 +238,7 @@ resource "google_bigquery_dataset" "bigquery_dataset" {
 resource "google_bigquery_table" "bigquery_table_scored" {
   dataset_id = google_bigquery_dataset.bigquery_dataset.dataset_id
   table_id   = "${var.BIGQUERY_TABLE}"
-  schema = <<EOF
-[
-    {
-        "name": "username",
-        "type": "STRING",
-        "mode": "NULLABLE",
-        "description": "unique username or user id"
-    },
-    {
-        "name": "timestamp",
-        "type": "INT64",
-        "mode": "NULLABLE",
-        "description": "Unix timestamp"
-    },
-    {
-        "name": "text",
-        "type": "STRING",
-        "mode": "NULLABLE",
-        "description": "text comment string"
-    },
-    {
-        "name": "score",
-        "type": "FLOAT64",
-        "mode": "NULLABLE",
-        "description": "toxicity score"
-    }
-]
-EOF
+  schema     = file("./schema/bigquery_schema_scored_chats.json")
 }
 
 /******************************************************

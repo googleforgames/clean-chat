@@ -43,7 +43,7 @@ class ScoringTest(unittest.TestCase):
   @unittest.dependencies()
 
   input_coll =   {
-            'username':  'theUser',
+            'userid':    'theUser',
             'timestamp': '20210804 11:22:46.222708',
             'text':      'this is a test chat'
             }

@@ -33,7 +33,7 @@ class ToxicityPipeline(object):
     '''Dataflow Pipeline and Supporting Methods for Aggregating Toxicity Scores'''
     def __init__(self, **kwargs):
         self.bq_schema = {'fields': [
-            {'name': 'username',       'type': 'STRING',  'mode': 'NULLABLE'},
+            {'name': 'userid',         'type': 'STRING',  'mode': 'NULLABLE'},
             {'name': 'timestamp',      'type': 'INTEGER', 'mode': 'NULLABLE'},
             {'name': 'text',           'type': 'STRING',  'mode': 'NULLABLE'},
             {'name': 'score',          'type': 'FLOAT64', 'mode': 'NULLABLE'}
@@ -49,21 +49,20 @@ class ToxicityPipeline(object):
         return json_payload
     
     def preprocess_event(self, event):
-        return ((event['username']), event)
+        return ((event['userid']), event)
     
     def bq_preprocessing(self, event):
         bq_payload = {
             'timestamp': event['timestamp'],
-            'username':  event['username'],
+            'userid':    event['userid'],
             'text':      event['text'],
             'score':     event['score'],
         }
         return bq_payload
     
     def avg_by_group(self, tuple):
-        print(f'[ DEBUG ] avg_by_group tuple = {tuple}')
         (k,v) = tuple
-        return {"username":k, "score": sum([record['score'] for record in v])/len(v)} 
+        return {"userid":k, "score": sum([record['score'] for record in v])/len(v)} 
     
     def convert_to_bytestring(self, event):
         try:
@@ -76,27 +75,47 @@ class ToxicityPipeline(object):
         
         send_toxic_signal = False
         
-        if event['username'] not in toxic_usernames:    
+        if event['userid'] not in toxic_usernames:    
             if event['score'] >= float(toxic_user_threshold):
                 send_toxic_signal = True
-                toxic_usernames.add(event['username'])
+                toxic_usernames.add(event['userid'])
         else:
             if event['score'] < float(toxic_user_threshold):
-                toxic_usernames.remove(event['username'])
+                toxic_usernames.remove(event['userid'])
         
         return send_toxic_signal
     
     def score_event(self, event):
         '''
         event = {
-            'username':  'user123',
+            'userid':    'user123',
             'timestamp': '20210804 11:22:46.222708',
             'text':      'my chat message'
         }
         '''
-        score_payload = scoring_logic.model(event['text'], perspective_apikey)
-        event['score']        = score_payload['score']
-        event['score_detail'] = score_payload
+        try:
+            score_payload = scoring_logic.model(event['text'], perspective_apikey)
+            event['score']        = score_payload['score']
+            event['score_detail'] = score_payload
+            return event
+        except Exception as e:
+            print(f'[ Exception ] At score_event. {e}')
+            # Pass a default score.
+            score_payload         = {'score':0.00001}
+            event['score']        = score_payload['score']
+            event['score_detail'] = score_payload
+            return event
+    
+    def result_post_processing(self, event):
+        # If the text variable is greater than X characters, then do not 
+        # send as part of the response payload. This has been added to 
+        # control for, and limit, large text payloads from being sent as 
+        # part of the response. This condition can be removed if it's 
+        # desirable to receive text (no matter the size) as part of the 
+        # response payload.
+        if len(event['text']) > 1000:
+            event = {k:v for k,v in event.items() if k not in 'text'}
+        
         return event
     
     def run_pipeline(self, known_args, pipeline_args):
@@ -125,9 +144,6 @@ class ToxicityPipeline(object):
                 raw_events  | 'parsed events' >> beam.Map(self.parse_pubsub)
                             | 'set_timestamp' >> beam.Map(lambda x: window.TimestampedValue(x, x['timestamp']))
             )
-            
-            # Print results to console (for testing/debugging)
-            #parsed_events | 'print parsed_events' >> beam.Map(print)
             
             score_events = (
                 parsed_events   | 'score events' >> beam.Map(self.score_event)
@@ -160,8 +176,9 @@ class ToxicityPipeline(object):
             
             # Write scored events to PubSub (where it can be pushed to a designed endpoint URL)
             (
-            score_events | 'convert scored msg'    >> beam.Map(self.convert_to_bytestring)
-                        | 'write to scored topic' >> beam.io.WriteToPubSub(known_args.pubsub_topic_text_scored)
+            score_events | 'results post-processing' >> beam.Map(self.result_post_processing)
+                         | 'convert scored msg'      >> beam.Map(self.convert_to_bytestring)
+                         | 'write to scored topic'   >> beam.io.WriteToPubSub(known_args.pubsub_topic_text_scored)
             )
             
             # Write all events into BigQuery (for analysis and model retraining)
@@ -201,14 +218,16 @@ if __name__ == '__main__':
     
     # Set GOOGLE_CLOUD_PROJECT environ variable
     if known_args.gcp_project is None:
-        print("Variable 'gcp_project' not set")
+        print("[ ERROR ] The 'gcp_project' argument is not set as an input parameter.")
         sys.exit()
     else:
         os.environ['GOOGLE_CLOUD_PROJECT']=known_args.gcp_project
     
-    # Set toxic user threshold value
+    # Load Toxic threshold parameter
     toxic_user_threshold = known_args.toxic_user_threshold
-    perspective_apikey = known_args.perspective_apikey
+    
+    # Load Perspective API (optional: only used if using Perspective API)
+    perspective_apikey   = known_args.perspective_apikey
     
     pipeline_args.extend([
         '--runner={}'.format(known_args.runner),                          # DataflowRunner or DirectRunner (local)
@@ -224,6 +243,6 @@ if __name__ == '__main__':
     
     # Instantiate Beam Pipeline
     ToxPipeline = ToxicityPipeline()
+    
     # Run Pipeline
     ToxPipeline.run_pipeline(known_args, pipeline_args)
-
