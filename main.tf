@@ -365,7 +365,7 @@ resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
 
 /******************************************************
 
-IAM Roles and Permissions
+IAM Roles and Permissions - Dataflow
 
 *******************************************************/
 
@@ -392,4 +392,50 @@ resource "google_project_iam_member" "iam_for_dataflow_pubsub" {
   project = "${var.GCP_PROJECT_ID}"
   role    = "roles/pubsub.editor"
   member  = "serviceAccount:${var.GCP_PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+}
+
+/******************************************************
+
+IAM Roles and Permissions - Backend API Service
+
+*******************************************************/
+
+# Create Service Account for Backend API Service
+resource "google_service_account" "sa" {
+  account_id   = "${TF_VAR_APP_CLOUD_RUN_NAME}-sa"
+  display_name = "Service account for clean-chat backend API service"
+}
+
+data "google_iam_policy" "admin" {
+  binding {
+    role = "roles/iam.serviceAccountUser"
+    members = [
+      "serviceAccount:${google_service_account.sa.email}",
+    ]
+  }
+}
+
+resource "google_service_account_iam_policy" "admin-account-iam" {
+  service_account_id = google_service_account.sa.name
+  policy_data        = data.google_iam_policy.admin.policy_data
+}
+
+# Update Service Account with PubSub role
+resource "google_project_iam_member" "project" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/pubsub.editor"
+  member  = "serviceAccount:${google_service_account.sa.email}"
+  depends_on = [
+    google_service_account.sa
+  ]
+}
+
+# Update Service Account with Cloud Storage role
+resource "google_project_iam_member" "project" {
+  project = "${var.GCP_PROJECT_ID}"
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${google_service_account.sa.email}"
+  depends_on = [
+    google_service_account.sa
+  ]
 }
