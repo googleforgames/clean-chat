@@ -19,13 +19,10 @@ include ./config
 
 help:
 	@echo ""
-	@echo "Enable GCP APIs"
-	@echo "    make enable-gcp-apis"
-	@echo ""
 	@echo "Initialize Terraform"
 	@echo "    make terraform-init"
 	@echo ""
-	@echo "Terraform Apply"
+	@echo "Deploy Core Services via Terraform"
 	@echo "    make terraform-apply"
 	@echo ""
 	@echo "Deploy realtime Scoring Engine"
@@ -37,8 +34,14 @@ help:
 	@echo "Deploy Backend API"
 	@echo "    make deploy-backend-api"
 	@echo ""
-	@echo "Delete Services"
+	@echo "Destroy/Delete all Services"
 	@echo "    make destroy-all"
+	@echo ""
+	@echo "Destroy/Cancel Scoring Engine"
+	@echo "    make destroy-scoring-engine"
+	@echo ""
+	@echo "Destroy/Delete Backend API Service"
+	@echo "    make destroy-backend-api"
 	@echo ""
 
 deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-backend-api
@@ -68,13 +71,13 @@ terraform-apply:
 	terraform apply
 
 deploy-scoring-engine:
-	@echo "Deploying Antidote Scoring Engine."
+	@echo "Deploying Clean-Chat Scoring Engine."
 	@echo "This may take a few minutes."
 	@echo "You can go here to see the running job: https://console.cloud.google.com/dataflow/jobs"
 	nohup ./components/scoring_engine/deploy-scoring-engine.sh &
 
 deploy-scoring-engine-interactive:
-	@echo "Deploying Antidote Scoring Engine (in interactive mode)"
+	@echo "Deploying Clean-Chat Scoring Engine (in interactive mode)"
 	./components/scoring_engine/deploy-scoring-engine-interactive.sh
 
 deploy-backend-api:
@@ -97,7 +100,7 @@ destroy-terraform:
 	@echo "Shutting down and deleting all Terraform deployed services"
 	terraform destroy
 
-# Antidote Model Sidecar - TFX Training in Cloud
+# Clean-Chat Model Sidecar - TFX Training in Cloud
 
 create-pipeline-cluster:
 	export PIPELINE_CLUSTER_NAME=${TF_VAR_ML_CLUSTER}

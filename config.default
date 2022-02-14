@@ -111,7 +111,7 @@ export TF_VAR_ENDPOINTS_CLOUD_RUN_REGION=${TF_VAR_GCP_REGION}
 # BigQuery locations such as US, EU, us-central1, europe-west1, etc.
 # Reference: https://cloud.google.com/bigquery/docs/locations
 export TF_VAR_BIGQUERY_LOCATION=US
-export TF_VAR_BIGQUERY_DATASET=${TF_VAR_SOLUTION_NAME}
+export TF_VAR_BIGQUERY_DATASET=clean_chat
 export TF_VAR_BIGQUERY_TABLE=scored_chats
 
 ######################################################

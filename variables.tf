@@ -36,6 +36,10 @@ variable "GCP_REGION" {
     default = ""
 }
 
+variable "SOLUTION_NAME" { 
+    default = ""
+}
+
 variable "PERSPECTIVE_API_KEY" { 
     default = ""
 }
@@ -93,6 +97,22 @@ variable "BIGQUERY_TABLE" {
 }
 
 variable "BIGQUERY_LOCATION" { 
+    default = ""
+}
+
+variable "APP_CLOUD_RUN_NAME" { 
+    default = ""
+}
+
+variable "APP_CLOUD_RUN_REGION" { 
+    default = ""
+}
+
+variable "ENDPOINTS_CLOUD_RUN_NAME" { 
+    default = ""
+}
+
+variable "ENDPOINTS_CLOUD_RUN_REGION" { 
     default = ""
 }
 

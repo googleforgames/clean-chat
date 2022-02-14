@@ -61,13 +61,13 @@ Google Artifact Repository
 
 *******************************************************/
 
-resource "google_artifact_registry_repository" "antidote-repo" {
+resource "google_artifact_registry_repository" "clean-chat-repo" {
   provider = google-beta
 
   repository_id = "${var.GCP_ARTIFACT_REGISTRY_NAME}"
   location = "${var.GCP_ARTIFACT_REGISTRY_REGION}"
   
-  description = "Antidote Docker Repository"
+  description = "Clean Chat Docker Repository"
   format = "DOCKER"
 
   depends_on = [
@@ -230,7 +230,7 @@ Google Cloud BigQuery Resources
 resource "google_bigquery_dataset" "bigquery_dataset" {
   dataset_id    = "${var.BIGQUERY_DATASET}"
   friendly_name = "${var.BIGQUERY_DATASET}"
-  description   = "Antidote Dataset"
+  description   = "Clean Chat Dataset"
   location      = "${var.BIGQUERY_LOCATION}"
   project       = "${var.GCP_PROJECT_ID}"
 }
@@ -285,8 +285,8 @@ resource "google_storage_bucket_object" "cf-send-to-pubsub-zip" {
 }
 
 resource "google_cloudfunctions_function" "cf-speech-to-text-short" {
-  name                  = "antidote-speech-to-text-short"
-  description           = "Antidote Speech-to-Text Short"
+  name                  = "${var.SOLUTION_NAME}-speech-to-text-short"
+  description           = "${var.SOLUTION_NAME} Speech-to-Text Short"
   source_archive_bucket = "${google_storage_bucket_object.cf-speech-to-text-short-zip.bucket}"
   source_archive_object = "${google_storage_bucket_object.cf-speech-to-text-short-zip.name}"
   runtime               = "python39"
@@ -311,8 +311,8 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-short" {
 }
 
 resource "google_cloudfunctions_function" "cf-speech-to-text-long" {
-  name                  = "antidote-speech-to-text-long"
-  description           = "Antidote Speech-to-Text Long"
+  name                  = "${var.SOLUTION_NAME}-speech-to-text-long"
+  description           = "${var.SOLUTION_NAME} Speech-to-Text Long"
   source_archive_bucket = "${google_storage_bucket_object.cf-speech-to-text-long-zip.bucket}"
   source_archive_object = "${google_storage_bucket_object.cf-speech-to-text-long-zip.name}"
   runtime               = "python39"
@@ -337,8 +337,8 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-long" {
 }
 
 resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
-  name                  = "antidote-send-to-pubsub"
-  description           = "Antidote send text to PubSub"
+  name                  = "${var.SOLUTION_NAME}-send-to-pubsub"
+  description           = "${var.SOLUTION_NAME} send text to PubSub"
   source_archive_bucket = "${google_storage_bucket_object.cf-send-to-pubsub-zip.bucket}"
   source_archive_object = "${google_storage_bucket_object.cf-send-to-pubsub-zip.name}"
   runtime               = "python39"
@@ -402,8 +402,8 @@ IAM Roles and Permissions - Backend API Service
 
 # Create Service Account for Backend API Service
 resource "google_service_account" "sa" {
-  account_id   = "${TF_VAR_APP_CLOUD_RUN_NAME}-sa"
-  display_name = "Service account for clean-chat backend API service"
+  account_id   = "${var.APP_CLOUD_RUN_NAME}-sa"
+  display_name = "Service account for ${var.SOLUTION_NAME} backend API service"
 }
 
 data "google_iam_policy" "admin" {
@@ -421,7 +421,7 @@ resource "google_service_account_iam_policy" "admin-account-iam" {
 }
 
 # Update Service Account with PubSub role
-resource "google_project_iam_member" "project" {
+resource "google_project_iam_member" "iam_for_backend_api_pubsub" {
   project = "${var.GCP_PROJECT_ID}"
   role    = "roles/pubsub.editor"
   member  = "serviceAccount:${google_service_account.sa.email}"
@@ -431,7 +431,7 @@ resource "google_project_iam_member" "project" {
 }
 
 # Update Service Account with Cloud Storage role
-resource "google_project_iam_member" "project" {
+resource "google_project_iam_member" "iam_for_backend_api_gcs" {
   project = "${var.GCP_PROJECT_ID}"
   role    = "roles/storage.admin"
   member  = "serviceAccount:${google_service_account.sa.email}"
