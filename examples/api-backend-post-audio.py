@@ -126,7 +126,7 @@ def main():
     
     # Demo/Example JSON Payload for Text Chat
     # Alternative URL for audio testing: https://github.com/zaratsian/Datasets/raw/master/test_audio.mp3
-    # Alternative URL for audio testing: https://github.com/googleforgames/antidote/raw/master/assets/test_audio.mp3
+    # Alternative URL for audio testing: https://github.com/googleforgames/clean-chat/raw/master/assets/test_audio.mp3
     post_json ={
         'audio_uri': 'https://github.com/zaratsian/Datasets/raw/master/test_audio.mp3',
         'userid':    'user123'

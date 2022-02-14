@@ -39,7 +39,7 @@ RUN pip3 install ./dist/scoring_logic-0.1.tar.gz
 ENTRYPOINT python3 main.py \
 		--gcp_project ${TF_VAR_GCP_PROJECT_ID} \
 		--region ${TF_VAR_DATAFLOW_REGION} \
-		--job_name 'antidote-scoring-engine' \
+		--job_name 'scoring-engine' \
 		--gcp_staging_location "gs://${TF_VAR_GCS_BUCKET_DATAFLOW}/staging" \
 		--gcp_tmp_location "gs://${TF_VAR_GCS_BUCKET_DATAFLOW}/tmp" \
 		--batch_size 10 \

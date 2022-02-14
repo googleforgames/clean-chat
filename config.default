@@ -33,24 +33,32 @@
 # General Project Parameters
 ######################################################
 
-# GCP Project ID
+# GCP Project ID 
+# TODO: User needs to add their own value prior to deployment
 export TF_VAR_GCP_PROJECT_ID=<YOUR_GCP_PROJECT_ID>
 
 # GCP Project Number
+# TODO: User needs to add their own value prior to deployment
 export TF_VAR_GCP_PROJECT_NUMBER=<YOUR_GCP_PROJECT_NUMBER>
 
-# GCP Region where the Antidote resources should be deployed. 
+# GCP Region where the Clean-Chat resources should be deployed.
+# TODO (Optional): User may add their own value prior to deployment
 export TF_VAR_GCP_REGION=us-central1
+
+# Solution name that is used as a naming prefix
+# TODO (Optional): User may add their own value prior to deployment
+export TF_VAR_SOLUTION_NAME=clean-chat
 
 # Perspective API Key (if using Perspective as the ML model)
 # Reference: https://developers.perspectiveapi.com/s/about-the-api
+# TODO (Optional): User may add their own value prior to deployment
 export TF_VAR_PERSPECTIVE_API_KEY=""
 
 ######################################################
 # Google Artifact Repo
 ######################################################
 
-export TF_VAR_GCP_ARTIFACT_REGISTRY_NAME=${TF_VAR_GCP_PROJECT_ID}-antidote-repo
+export TF_VAR_GCP_ARTIFACT_REGISTRY_NAME=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-repo
 export TF_VAR_GCP_ARTIFACT_REGISTRY_REGION=${TF_VAR_GCP_REGION}
 
 ######################################################
@@ -58,42 +66,42 @@ export TF_VAR_GCP_ARTIFACT_REGISTRY_REGION=${TF_VAR_GCP_REGION}
 ######################################################
 
 # GCS bucket where text-based chat files will be dropped/uploaded.
-export TF_VAR_GCS_BUCKET_TEXT_DROPZONE=${TF_VAR_GCP_PROJECT_ID}-antidote-text-dropzone
+export TF_VAR_GCS_BUCKET_TEXT_DROPZONE=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-text-dropzone
 
 # GCS bucket where audio files will be dropped/uploaded.
-export TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_SHORT=${TF_VAR_GCP_PROJECT_ID}-antidote-audio-dropzone-short
-export TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_LONG=${TF_VAR_GCP_PROJECT_ID}-antidote-audio-dropzone-long
+export TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_SHORT=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-audio-dropzone-short
+export TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_LONG=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-audio-dropzone-long
 
 # GCS bucket for cloud functions tmp space
-export TF_VAR_GCS_BUCKET_CLOUD_FUNCTIONS=${TF_VAR_GCP_PROJECT_ID}-antidote-cloud-functions
+export TF_VAR_GCS_BUCKET_CLOUD_FUNCTIONS=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-cloud-functions
 
 # GCS bucket for Dataflow - tmp and staging assets.
-export TF_VAR_GCS_BUCKET_DATAFLOW=${TF_VAR_GCP_PROJECT_ID}-antidote-dataflow
+export TF_VAR_GCS_BUCKET_DATAFLOW=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-dataflow
 
 ######################################################
 # Google PubSub
 ######################################################
 
 # PubSub topic where chat/txt messages will be sent to for analysis. 
-export TF_VAR_PUBSUB_TOPIC_TEXT_INPUT=${TF_VAR_GCP_PROJECT_ID}-antidote-text-input
+export TF_VAR_PUBSUB_TOPIC_TEXT_INPUT=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-text-input
 
 # This topic contains the scored messages as a JSON payload.
-export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED=${TF_VAR_GCP_PROJECT_ID}-antidote-text-scored
-export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED_PUSH_ENDPOINT=https://antidote-api-backend-placeholder-uc.a.run.app/antidote_callback
+export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-text-scored
+export TF_VAR_PUBSUB_TOPIC_TEXT_SCORED_PUSH_ENDPOINT=https://${TF_VAR_SOLUTION_NAME}-api-backend-placeholder-uc.a.run.app/${TF_VAR_SOLUTION_NAME}-callback
 
 # PubSub topic for flagged/toxic user (if a toxic user is flagged, a message will be sent here)
-export TF_VAR_PUBSUB_TOPIC_TOXIC=${TF_VAR_GCP_PROJECT_ID}-antidote-toxic-topic
+export TF_VAR_PUBSUB_TOPIC_TOXIC=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-toxic-topic
 
 ######################################################
 # API Endpoint & Backend
 ######################################################
 
 # API Backend App Parameters
-export TF_VAR_APP_CLOUD_RUN_NAME=antidote-api-backend
+export TF_VAR_APP_CLOUD_RUN_NAME=${TF_VAR_SOLUTION_NAME}-api-backend
 export TF_VAR_APP_CLOUD_RUN_REGION=${TF_VAR_GCP_REGION}
 
 # API Endpoint Parameters
-export TF_VAR_ENDPOINTS_CLOUD_RUN_NAME=antidote-api-endpoint
+export TF_VAR_ENDPOINTS_CLOUD_RUN_NAME=${TF_VAR_SOLUTION_NAME}-api-endpoint
 export TF_VAR_ENDPOINTS_CLOUD_RUN_REGION=${TF_VAR_GCP_REGION}
 
 ######################################################
@@ -103,7 +111,7 @@ export TF_VAR_ENDPOINTS_CLOUD_RUN_REGION=${TF_VAR_GCP_REGION}
 # BigQuery locations such as US, EU, us-central1, europe-west1, etc.
 # Reference: https://cloud.google.com/bigquery/docs/locations
 export TF_VAR_BIGQUERY_LOCATION=US
-export TF_VAR_BIGQUERY_DATASET=antidote
+export TF_VAR_BIGQUERY_DATASET=${TF_VAR_SOLUTION_NAME}
 export TF_VAR_BIGQUERY_TABLE=scored_chats
 
 ######################################################
@@ -141,7 +149,7 @@ export TF_VAR_TOXIC_USER_THRESHOLD=0.60
 ######################################################
 
 # GKE cluster name for ML Pipeline
-export TF_VAR_ML_CLUSTER=${TF_VAR_GCP_PROJECT_ID}-antidote-pipeline-cluster
+export TF_VAR_ML_CLUSTER=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-pipeline-cluster
 
 # GKE zone
 export TF_VAR_ML_ZONE=${TF_VAR_GCP_REGION}
@@ -153,8 +161,8 @@ export TF_VAR_ML_MACHINE_TYPE=n1-standard-2
 export TF_VAR_ML_SCOPES=cloud-platform
 export TF_VAR_ML_PIPELINE_NAME=${TF_VAR_GCP_PROJECT_ID}-toxicity-pipeline
 export TF_VAR_ML_PIPELINE_ROOT=${TF_VAR_GCP_PROJECT_ID}-kubeflow-root
-export TF_VAR_ML_APP_INSTANCE_NAME=${TF_VAR_GCP_PROJECT_ID}-antidote-ml-pipeline
-export TF_VAR_ML_NAMESPACE=antidote-ml-namespace
+export TF_VAR_ML_APP_INSTANCE_NAME=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-ml-pipeline
+export TF_VAR_ML_NAMESPACE=${TF_VAR_SOLUTION_NAME}-ml-namespace
 export TF_VAR_MARKETPLACE_TOOLS_TAG=remove-ui-ownerrefs
 export TF_VAR_MARKETPLACE_TOOLS_IMAGE=gcr.io/cloud-marketplace-staging/marketplace-k8s-app-tools/k8s/dev
 
