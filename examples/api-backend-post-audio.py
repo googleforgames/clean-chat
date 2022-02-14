@@ -96,7 +96,6 @@ def make_authorized_request(service_url, post_json):
         print(f'Exception: {e}')
         sys.exit()
 
-
 def pubsub_subscriber(project_id, subscription_id):
     subscriber = pubsub_v1.SubscriberClient()
     # The `subscription_path` method creates a fully qualified identifier
@@ -120,7 +119,6 @@ def pubsub_subscriber(project_id, subscription_id):
             streaming_pull_future.cancel()  # Trigger the shutdown.
             streaming_pull_future.result()  # Block until the shutdown is complete.
             #pass
-
 
 def main():
     

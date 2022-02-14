@@ -96,7 +96,6 @@ def make_authorized_request(service_url, post_json):
         print(f'Exception: {e}')
         sys.exit()
 
-
 def pubsub_subscriber(project_id, subscription_id):
     subscriber = pubsub_v1.SubscriberClient()
     # The `subscription_path` method creates a fully qualified identifier
@@ -121,14 +120,19 @@ def pubsub_subscriber(project_id, subscription_id):
             streaming_pull_future.result()  # Block until the shutdown is complete.
             #pass
 
-
 def main():
     
     # Demo/Example JSON Payload for Text Chat
-    post_json ={
-        'text':     'This is not a toxic text message. I hate this test!',
-        'userid':   'user123'
-    }
+    if len(sys.argv) >= 2:
+        payload ={
+            'text':     f'{sys.argv[1]}',
+            'userid':   'user123'
+        }
+    else:
+        payload ={
+            'text':     'Test text message',
+            'userid':   'user123'
+        }
     
     # Set IAM Policy Binding
     # This grants the email/member to invoke the Cloud Run service
@@ -144,8 +148,8 @@ def main():
         service_url = f'{cloud_run_url}/text'
         
         print(f'Executing POST request for {service_url}')
-        print(f'POST Payload:\n{json.dumps(post_json,indent=4)}\n')
-        response = make_authorized_request(service_url, post_json)
+        print(f'POST Payload:\n{json.dumps(payload,indent=4)}\n')
+        response = make_authorized_request(service_url, payload)
         
         print(f'{response.status}, {response.read()}')
         
