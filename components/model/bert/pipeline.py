@@ -16,29 +16,22 @@
 #
 ################################################################################################################
 
-import os 
+from typing import Any, Dict, List, Optional
 
 import tensorflow_model_analysis as tfma
-from typing import Text
-from tfx.components import (Evaluator, ExampleValidator, ImportExampleGen,
-                            ModelValidator, Pusher, SchemaGen,
-                            StatisticsGen, Trainer, Transform)
-from tfx.proto import example_gen_pb2, pusher_pb2, trainer_pb2
-from tfx.dsl.components.common import resolver
-from tfx.dsl.experimental import latest_blessed_model_resolver
-from tfx.orchestration import pipeline
-from tfx.orchestration.kubeflow import kubeflow_dag_runner
-from tfx.components.example_gen.csv_example_gen.component import CsvExampleGen
-from tfx.types import Channel
-from tfx.types.standard_artifacts import Model, ModelBlessing
+from tfx import v1 as tfx
+
+from ml_metadata.proto import metadata_store_pb2
 
 
-def create_train_pipeline(
-	pipeline_name: Text,
-    pipeline_root: Text,
-    data_path: Text,
-    transform_path: Text,
-    train_path: Text,
+def create_pipeline(
+	pipeline_name: str,
+    pipeline_root: str,
+    data_path: str,
+    preprocessing_fn: str,
+    run_fn: str,
+    train_steps: tfx.proto.TrainArgs,
+    eval_steps: tfx.proto.EvalArgs,
 	train_steps,
     eval_steps,
     serving_model_dir
@@ -49,53 +42,86 @@ def create_train_pipeline(
     	A TFX pipeline object.
 	''' 
 
-	## Bring Data Into Pipeline
-	output = example_gen_pb2.Output(
-             	split_config=example_gen_pb2.SplitConfig(splits=[
-                 	example_gen_pb2.SplitConfig.Split(name='train', hash_buckets=45),
-                 	example_gen_pb2.SplitConfig.Split(name='eval', hash_buckets=5)
-             	]))
-	example_gen = CsvExampleGen(input_base=serving_model_dir, output_config=output)
 
+	components = []
+
+  	## Brings data into the pipeline or otherwise joins/converts training data.
+  	example_gen = tfx.components.CsvExampleGen(input_base=data_path)
+  	components.append(example_gen)
 
 	## Computes Statistics for Validation
-	statistics_gen = StatisticsGen(
+	statistics_gen = tfx.components.StatisticsGen(
     	examples=example_gen.outputs['examples']
     	)
 
-	## Creates Schema
-	schema_gen = SchemaGen(statistics=statistics_gen.outputs['statistics'], 
-	 	infer_feature_shape=True)
+	## Performs anomaly detection based on statistics and data schema.
+	if schema_path is None:
+    	schema_gen = tfx.components.SchemaGen(
+        statistics=statistics_gen.outputs['statistics'])
+    	components.append(schema_gen)
+  	else:
+    	schema_gen = tfx.components.ImportSchemaGen(schema_file=schema_path)
+    	components.append(schema_gen)
+
+    ## Performs anomaly detection based on statistics and data schema.
+    example_validator = tfx.components.ExampleValidator(statistics=statistics_gen.outputs['statistics'],
+    													schema=schema_gen.outputs['schema'])
+	components.append(example_validator)
+
 
 	## Performs Transforms
-	transform = Transform(
-    	examples=example_gen.outputs['examples'],
-    	schema=schema_gen.outputs['schema'],
-    	module_file=os.path.abspath(transform_path)
-    	)
+	transform = tfx.components.Transform(
+      examples=example_gen.outputs['examples'],
+      schema=schema_gen.outputs['schema'],
+      preprocessing_fn=preprocessing_fn)
+  	components.append(transform)
 
 	## Trainer Component
-	trainer = Trainer(
+	trainer = tfx.components.Trainer(
     	module_file=os.path.abspath(train_path),
     	#custom_executor_spec=executor_spec.ExecutorClassSpec(GenericExecutor),
     	examples=transform.outputs['transformed_examples'],
     	transform_graph=transform.outputs['transform_graph'],
     	schema=schema_gen.outputs['schema'],
-    	train_args=train_steps,
-    	eval_args=eval_steps
+    	train_steps=train_steps,
+    	eval_steps=eval_steps
     	)
 
+	# Uses user-provided Python function that implements a model.
+  	trainer_args = {
+    	'run_fn': run_fn,
+    	'examples': transform.outputs['transformed_examples'],
+    	'schema': schema_gen.outputs['schema'],
+    	'transform_graph': transform.outputs['transform_graph'],
+    	'train_args': train_args,
+    	'eval_args': eval_args,
+  		}
+
+  	if ai_platform_training_args is not None:
+    	trainer_args['custom_config'] = {
+        	tfx.extensions.google_cloud_ai_platform.TRAINING_ARGS_KEY:
+            	ai_platform_training_args,
+    	}   	
+    	trainer = tfx.extensions.google_cloud_ai_platform.Trainer(**trainer_args)
+  	else:
+    	trainer = tfx.components.Trainer(**trainer_args)
+		components.append(trainer)
+
 	## Resolver Component
-	model_resolver = resolver.Resolver(
-    	strategy_class=latest_blessed_model_resolver.LatestBlessedModelResolver,
-    	model=Channel(type=Model),
-    	model_blessing=Channel(type=ModelBlessing)).with_id('latest_blessed_model_resolver'
-    	)
+	model_resolver = tfx.dsl.Resolver(
+    	strategy_class=tfx.dsl.experimental.LatestBlessedModelStrategy,
+    	model=tfx.dsl.Channel(type=tfx.types.standard_artifacts.Model),
+    	model_blessing=tfx.dsl.Channel(
+          type=tfx.types.standard_artifacts.ModelBlessing)).with_id(
+              'latest_blessed_model_resolver')
+  	components.append(model_resolver)
 
 	## Evaluator 
 	eval_config = tfma.EvalConfig(
     	model_specs=[
-        	tfma.ModelSpec(label_key='target')
+        	tfma.ModelSpec(label_key='target',
+        	signature_name='serving_default',
+        	preprocessing_function_names=['transform_features'])
     	],
     	metrics_specs=[
         	tfma.MetricsSpec(
@@ -103,7 +129,7 @@ def create_train_pipeline(
                 	tfma.MetricConfig(class_name='ExampleCount')
             	],
             	thresholds = {
-                	'binary_accuracy': tfma.MetricThreshold(
+                	'accuracy': tfma.MetricThreshold(
                     	value_threshold=tfma.GenericValueThreshold(
                         	lower_bound={'value': 0.5}),
                     	change_threshold=tfma.GenericChangeThreshold( direction=tfma.MetricDirection.HIGHER_IS_BETTER, absolute={'value': -1e-10}))
@@ -114,27 +140,49 @@ def create_train_pipeline(
     )
 
 	## Evaluator Componant
-	evaluator = Evaluator(
+	evaluator = tfx.components.Evaluator(
     	examples=example_gen.outputs['examples'],
     	model=trainer.outputs['model'],
     	baseline_model=model_resolver.outputs['model'],
     	eval_config=eval_config
 	)
+	components.append(evaluator)
+
+	# Checks whether the model passed the validation steps and pushes the model
+  	# to a file destination if check passed.
+ 	pusher_args = {
+     	'model':
+         	trainer.outputs['model'],
+      	'model_blessing':
+         	evaluator.outputs['blessing'],
+ 	}
+
+  if ai_platform_serving_args is not None:
+    pusher_args['custom_config'] = {
+        tfx.extensions.google_cloud_ai_platform.experimental
+        .PUSHER_SERVING_ARGS_KEY:
+            ai_platform_serving_args
+    }
+    pusher = tfx.extensions.google_cloud_ai_platform.Pusher(**pusher_args)  # pylint: disable=unused-variable
+  else:
+    pusher_args['push_destination'] = tfx.proto.PushDestination(
+        filesystem=tfx.proto.PushDestination.Filesystem(
+            base_directory=serving_model_dir))
+    pusher = tfx.components.Pusher(**pusher_args)  # pylint: disable=unused-variable
+  # TODO(step 6): Uncomment here to add Pusher to the pipeline.
+  # components.append(pusher)
 
     ## TODO: Update Serving Model Directory 
     ## Pusher - Export for Model Serving
-	pusher = Pusher(
+	pusher = tfx.components.Pusher(
     	model=trainer.outputs['model'],
     	model_blessing=evaluator.outputs['blessing'],
-    	push_destination=pusher_pb2.PushDestination(
-        	filesystem=pusher_pb2.PushDestination.Filesystem(
+    	push_destination=tfx.proto.PushDestination(
+        	filesystem=tfx.proto.PushDestination.Filesystem(
             	base_directory=serving_model_dir)))
-
+	## TODO: Change Pipeline Name / Root Enviroment Variables
 	return pipeline.Pipeline(
-		pipeline_name='antidote-pipeline',
-      	pipeline_root='gs://antdote_ml_storage/tfx_pipeline_output/antidote-pipeline',
-      	components=[
-          example_gen, statistics_gen, schema_gen, transform,
-          trainer, model_resolver, evaluator
-      	],
+		pipeline_name=pipeline_name,
+      	pipeline_root=pipeline_root,
+      	components=components
   	)	

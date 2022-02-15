@@ -17,70 +17,15 @@
 ################################################################################################################
 ## Train the Full BERT  Keras 
 
+from absl import logging
 import tensorflow as tf
-import tensorflow_hub as hub
-import tensorflow_model_analysis as tfma
 import tensorflow_transform as tft
-from tensorflow_transform.tf_metadata import schema_utils
 
-from typing import Text
+from official.nlp import optimization
 
-import absl
-import tensorflow as tf
-from tensorflow import keras
-import tensorflow_transform as tft
-from tfx.components.trainer.executor import TrainerFnArgs
-
-
-_LABEL_KEY = 'label'
-BERT_TFHUB_URL = "https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/2"
-
-
-def _gzip_reader_fn(filenames):
-    """Small utility returning a record reader that can read gzip'ed files."""
-    return tf.data.TFRecordDataset(filenames, compression_type='GZIP')
-
-def load_bert_layer(model_url=BERT_TFHUB_URL):
-    # Load the pre-trained BERT model as layer in Keras
-    bert_layer = hub.KerasLayer(
-        handle=model_url,
-        trainable=False)  # model can be fine-tuned 
-    return bert_layer
-
-def get_model(tf_transform_output, max_seq_length=64, num_labels=2):
-
-    # dynamically create inputs for all outputs of our transform graph
-    feature_spec = tf_transform_output.transformed_feature_spec()  
-    feature_spec.pop(_LABEL_KEY)
-
-    inputs = {key: tf.keras.layers.Input(shape=(max_seq_length), name=key, dtype=tf.int64) for key in feature_spec.keys()}
-
-    input_word_ids = tf.cast(inputs["input_word_ids"], dtype=tf.int32)
-    input_mask = tf.cast(inputs["input_mask"], dtype=tf.int32)
-    input_type_ids = tf.cast(inputs["input_type_ids"], dtype=tf.int32)
-
-    ## BERT Layer
-    bert_layer = load_bert_layer()
-    pooled_output, _ = bert_layer([input_word_ids, input_mask, input_type_ids])
-    
-    # TODO: Adjust layers for dataset 
-    x = tf.keras.layers.Dense(256, activation='relu')(pooled_output)
-    dense = tf.keras.layers.Dense(64, activation='relu')(x)
-    pred = tf.keras.layers.Dense(1, activation='sigmoid')(dense)
-
-
-    ## Full Model
-    keras_model = tf.keras.Model(
-        inputs=[
-                inputs['input_word_ids'], 
-                inputs['input_mask'], 
-                inputs['input_type_ids']], 
-        outputs=pred)
-    keras_model.compile(loss='binary_crossentropy', 
-                        optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), 
-                        metrics=['accuracy']
-                        )
-    return keras_model
+from tfx.experimental.templates.taxi.models import features
+from tfx.experimental.templates.taxi.models.keras_model import constants
+from tfx_bsl.public import tfxio
 
 
 def _get_serve_tf_examples_fn(model, tf_transform_output):
@@ -125,10 +70,35 @@ def _input_fn(file_pattern: Text,
         reader=_gzip_reader_fn,
         label_key=_LABEL_KEY)
 
-    return dataset
+    return dataset 
+
+def toxicity_model():
+
+    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
+    preprocessing_layer = hub.KerasLayer(preprocess_path, name='preprocessing')
+    encoder_inputs = preprocessing_layer(text_input)
+    encoder = hub.KerasLayer(bert_path, trainable=True, name='BERT_encoder')
+    outputs = encoder(encoder_inputs)
+    net = outputs['pooled_output']
+    net = tf.keras.layers.Dropout(0.1)(net)
+    net = tf.keras.layers.Dense(1, activation=None, name='classifier')(net)
+
+    model =tf.keras.Model(text_input, net)
+
+    optimizer = optimization.create_optimizer(init_lr=3e-5,
+                                          num_train_steps=5,
+                                          num_warmup_steps=int(0.1*5),
+                                          optimizer_type='adamw')
+
+    ## add optimizer, loss, etc in appropriate place
+    model.compile(optimizer=optimizer,
+                         loss=tf.keras.losses.MeanAbsoluteError(),
+                         metrics=tf.metrics.MeanSquaredError())
+
+    return model
 
 # TFX Trainer will call this function.
-def run_fn(fn_args: TrainerFnArgs):
+def run_fn(fn_args):
     """Train the model based on given args.
     Args:
       fn_args: Holds args used to train the model as name/value pairs.
@@ -140,14 +110,20 @@ def run_fn(fn_args: TrainerFnArgs):
 
     mirrored_strategy = tf.distribute.MirroredStrategy()
     with mirrored_strategy.scope():
-        model = get_model(tf_transform_output=tf_transform_output)
+        model = toxicity_model()
+
+    # Write logs to path
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(
+        log_dir=fn_args.model_run_dir, update_freq='batch')
 
     model.fit(
         train_dataset,
         steps_per_epoch=fn_args.train_steps,
         validation_data=eval_dataset,
-        validation_steps=fn_args.eval_steps)
+        validation_steps=fn_args.eval_steps, 
+        callbacks=[tensorboard_callback])
 
+    ## TODO: Update model serving signiture?
     signatures = {
         'antidote-serving':
             _get_serve_tf_examples_fn(model,
