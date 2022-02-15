@@ -22,6 +22,8 @@
 ## Placeholder - Empty Pre-Processing Function
 def preprocessing_fn(inputs):
 
+    inputs['comment_text'] = tf.strings.lower(inputs['comment_text'])
+
     return {
             'text': inputs['comment_text'],
             'label': inputs['target']
