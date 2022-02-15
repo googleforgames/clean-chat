@@ -26,7 +26,6 @@ urllib3.disable_warnings()
 import google.auth.transport.requests
 import google.oauth2.id_token
 from google.cloud import pubsub_v1
-from concurrent.futures import TimeoutError
 
 project_id      = os.environ.get('TF_VAR_GCP_PROJECT_ID', '')
 cloud_run_name  = os.environ.get('TF_VAR_APP_CLOUD_RUN_NAME', '')
@@ -115,10 +114,9 @@ def pubsub_subscriber(project_id, subscription_id):
             # When `timeout` is not set, result() will block indefinitely,
             # unless an exception is encountered first.
             streaming_pull_future.result(timeout=timeout)
-        except TimeoutError:
+        except:
             streaming_pull_future.cancel()  # Trigger the shutdown.
             streaming_pull_future.result()  # Block until the shutdown is complete.
-            #pass
 
 def main():
     

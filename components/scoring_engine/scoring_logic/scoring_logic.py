@@ -17,16 +17,22 @@
 ################################################################################################################
 
 '''
-NOTE: The "toxicity logic" contained within this 
-script is meant to be a quick/simplistic way to 
-score for toxicity and it only intended for demo 
-purposes. 
-This script should be customized to produce the 
-desired toxicity score based on your own data and 
-your own business requirements.
-Update this function with your own ML model(s), 
-which could be based on scikit-learn, tensorflow/keras, 
-pytorch, bqml, rule-based logic, or a hybrid of those.
+NOTE: The code contained within this script is intended
+for demo/example purposes, and uses the Perspective API.
+https://www.perspectiveapi.com/
+
+If you choose to use the Perspective API, follow these steps:
+https://developers.perspectiveapi.com/s/docs-get-started
+
+For best results, this script should be updated with your
+own machine learning model and/or business logic. The 
+model may leverage a Google Partner, such as Cohere, or 
+a custom trained model in scikit-learn, tensorflow/keras, 
+pytorch, rule-based logic, or a hybrid of those.
+
+IMPORTANT: In order for the model to be deployed as part of 
+the framework, this script must have the following input and output:
+
 Input:
     name: text
     type: string
@@ -72,7 +78,6 @@ class Perspective_Handler(object):
         keyDict = {"key": self.key}
         response = requests.post(self.url, data=commentRequest, headers=headers,params=keyDict)
         commentJson = response.json()
-        print(f'[ INFO ] commentJson: {commentJson}')
         return commentJson
     
     # Parse through returned Json dictionary
@@ -100,9 +105,10 @@ class monitor_toxicity:
     # Calculate the total probability score 
     def calculate_tScore(self, probs):
         '''Conflation of the Individual Probability Scores '''
+        AllP = {self.testUsed[i]:probs[i] for i in range(len(self.testUsed))}
         pIdentity, pInsult, pSexual = [probs[i] for i in range(len(self.testUsed))]
         CombinedP = (pIdentity * pInsult * pSexual) / ((pIdentity * pInsult * pSexual) + ((1-pIdentity)*(1-pInsult)*(1-pSexual)))
-        return CombinedP
+        return CombinedP, AllP
     
     # Calculate Current Score
     def calculate_score(self, cNum, iProb, nProb):
@@ -112,8 +118,6 @@ class monitor_toxicity:
 
 def model(text, key):
     '''Run Toxicity Scoring'''
-    c = 0
-    pList = []
     
     toxicP = Perspective_Handler(key)
     monitorT = monitor_toxicity()
@@ -125,12 +129,13 @@ def model(text, key):
     
     # Calculate Total Probability from Perspective Scores
     # This score (p) is weighted between three categories   
-    # Conflated probability from indivudal comment
-    p = monitorT.calculate_tScore(probs)
+    # Conflated probability from an individual comment
+    p, pdetail = monitorT.calculate_tScore(probs)
     
     if isinstance(p, float):                                                       
         score_payload = {
-            'score': p
+            'score':  p,
+            'detail': pdetail
         }
     
     return score_payload
