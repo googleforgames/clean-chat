@@ -74,6 +74,9 @@ def _input_fn(file_pattern: Text,
 
 def toxicity_model():
 
+    bert_path = "https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/4"
+    preprocess_path = 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'
+
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
     preprocessing_layer = hub.KerasLayer(preprocess_path, name='preprocessing')
     encoder_inputs = preprocessing_layer(text_input)
