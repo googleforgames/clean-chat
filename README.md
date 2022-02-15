@@ -2,8 +2,6 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/googleforgames/antidote)](https://github.com/googleforgames/quilkin/antidote)
 
 
-
-
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
@@ -15,7 +13,6 @@
      OSS framework for orchestrating the detection of disruptive behavior in video games
   </p>
 </p>
-
 
 
 <!-- TABLE OF CONTENTS -->
@@ -65,13 +62,9 @@ Antidote’s design is divided into three main components:
 - Game Telemetry Intake: Antidote’s means of communicating with Game Servers and handling game telemetry data from them. Note - Antidote is specifically designed to work as a third-party service or sidecar to the game server, and does not directly communicate with the client itself
 - ML Model Pipeline: A self-contained, ML-Ops driven framework for training, deploying, and maintaining toxicity models. The Model pipeline provides several options for base models, including both open source and Google Cloud Partner Models. 
 
-**1. API Endpoints**
+**1. API Backend Service**
 
-Antidote contains an an API Endpoint, that works with ESPv2 for OpenAPI. These API Endpoints allow chats and audio files to be passed into the Antidote framework through a secure, monitored service. The component is based on [Google Cloud Endpoints with ESPv2](https://cloud.google.com/endpoints/docs/openapi/tutorials).
-
-An API Developer Portal is provided as part of the framework, which can be used for debugging and testing purposes.
-
-![Portal](./assets/images/dev_portal.png)
+Antidote contains an an API Backend service. This service accepts text chat and audio files to be passed into the framework. The backend service is deployed on [Google Cloud Run](https://cloud.google.com/run) and exposed as an internal service with a dedicated service account.
 
 **2. Cloud Functions**
 
@@ -131,12 +124,15 @@ Follow these steps to config and deploy the Antidote framework:
 
     ```
     make deploy-scoring-engine
+
+    # NOTE: You can also deploy the scoring engine in interactive mode, for testing/debugging purposes using hte following commmand:
+    make deploy-scoring-engine-interactive
     ```
 
-7.  Deploy the Endpoint Backend
+7.  Deploy the API Backend Service
 
     ```
-    make deploy-endpoint-backend
+    make make deploy-backend-api
     ```
 
 ## Demo Examples
@@ -144,17 +140,19 @@ Follow these steps to config and deploy the Antidote framework:
 There are currently two ways to score toxicity, both which can be demoed & tested. The demo examples include: 
 
 ```
-# Option #1
-# Run the Chat/Text Message Demo
-cd ./setup 
-./10-demo-chat.sh
+# Option #1 
+# Hello World example to ensure that the Backend API service is responding.
+python3 ./examples/api-backend-get-test.py
+
+# Option #2
+# Run the Chat/Text Message example
+python3 ./examples/api-backend-post-text.py
 ```
 
 ```
-# Option #2
+# Option #3
 # Run the Audio Demo
-cd ./setup
-./10-demo-audio-stt.sh
+python3 ./examples/api-backend-post-audio.py
 ```
 
 ## Toxicity Model Sidecar
