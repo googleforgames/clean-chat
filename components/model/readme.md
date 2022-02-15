@@ -1,6 +1,6 @@
 # Overview 
 
-Antidote comes pre-packaged with a framework to train, test, and deploy toxicity detection models. Currently, the framework supports models that detect toxicity in voice and text chat. Antidote provides two model training interfaces; one basic training interface that only utilizes the training features of Keras, and one that supports an ML Ops framework. 
+Clean Chat comes pre-packaged with a framework to train, test, and deploy toxicity detection models. Currently, the framework supports models that detect toxicity in voice and text chat. Clean Chat provides two model training interfaces; one basic training interface that only utilizes the training features of Keras, and one that supports an ML Ops framework. 
 
 ## Model Choices
 
@@ -21,7 +21,7 @@ BERT is a transformer language model developed by Google in 2018. BERT is availa
 
 #### Model Training with TFX (ML Ops)
 
-This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently supports the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model in a TFX framework. 
+This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Clean Chat currently supports the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model in a TFX framework. 
 
 The architecture consists of: 
 - The model pipeline (tfx_pipeline.py). A TFX/Kubeflow pipeline to transform the training data, train the model, and push the resulting model artifact 
