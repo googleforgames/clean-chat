@@ -1,16 +1,16 @@
-[![GitHub](https://img.shields.io/github/license/googleforgames/antidote)](./LICENSE)
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/googleforgames/antidote)](https://github.com/googleforgames/quilkin/antidote)
+[![GitHub](https://img.shields.io/github/license/googleforgames/clean-chat)](./LICENSE)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/googleforgames/clean-chat)](https://github.com/googleforgames/clean-chat)
 
 
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <img src="assets/images/antidote_logo1.png" alt="Logo" width="80" height="80">
+  <img src="assets/images/clean-chat-logo1.png" alt="Logo" width="80" height="80">
 
-  <h3 align="center">Antidote</h3>
+  <h3 align="center">Clean Chat</h3>
 
   <p align="center">
-     OSS framework for orchestrating the detection of disruptive behavior in video games
+     OSS framework detecting disruptive behavior in games
   </p>
 </p>
 
@@ -46,25 +46,25 @@
 <!-- PROJECT OVERVIEW -->
 ## Project Overview
 
-Antidote is an open source solution to eliminate or mitigate toxic behavior in online multiplayer video games, with the goals of making games more enjoyable and inclusive for all. In large open multiplayer games, toxicity is rampant. Antidote provides the ability to proactively detect toxicity in voice and text chat, and provides scores to game moderation services or player support personnel. The project provides a globally scalable framework for training, deploying, and maintaining low-latency anti-toxicity models. . The framework comes pre-packaged with several machine learning 'base models' that allow you to train, or fine tune, the models to detect toxic speech in the vernacular of your game's players.
+Clean Chat is an open source solution to eliminate or mitigate toxic behavior in online multiplayer video games, with the goals of making games more enjoyable and inclusive for all. In large open multiplayer games, toxicity is rampant. Clean Chat provides the ability to proactively detect toxicity in voice and text chat, and provides scores to game moderation services or player support personnel. The project provides a globally scalable framework for training, deploying, and maintaining low-latency anti-toxicity models. . The framework comes pre-packaged with several machine learning 'base models' that allow you to train, or fine tune, the models to detect toxic speech in the vernacular of your game's players.
 
 
-**What Antidote Is Not**
+**What Clean Chat Is Not**
 
-Antidote is not a specific model for detecting toxicity. It is a <i>framework</i> where users can train and deploy their own ML model or they can build upon our pre-trained base models. 
+Clean Chat is not a specific model for detecting toxicity. It is a <i>framework</i> where users can train and deploy their own ML model or they can build upon our pre-trained base models. 
 
 ---
 
 ## Architecture Components:
 
-Antidote’s design is divided into three main components: 
+Clean Chat’s design is divided into three main components: 
  - The Scoring Engine: This is the online service that hosts the toxicity detection models, and conducts aggregation of the results. 
-- Game Telemetry Intake: Antidote’s means of communicating with Game Servers and handling game telemetry data from them. Note - Antidote is specifically designed to work as a third-party service or sidecar to the game server, and does not directly communicate with the client itself
+- Game Telemetry Intake: Clean Chat’s means of communicating with Game Servers and handling game telemetry data from them. Note - Clean Chat is specifically designed to work as a third-party service or sidecar to the game server, and does not directly communicate with the client itself
 - ML Model Pipeline: A self-contained, ML-Ops driven framework for training, deploying, and maintaining toxicity models. The Model pipeline provides several options for base models, including both open source and Google Cloud Partner Models. 
 
 **1. API Backend Service**
 
-Antidote contains an an API Backend service. This service accepts text chat and audio files to be passed into the framework. The backend service is deployed on [Google Cloud Run](https://cloud.google.com/run) and exposed as an internal service with a dedicated service account.
+Clean Chat contains an an API Backend service. This service accepts text chat and audio files to be passed into the framework. The backend service is deployed on [Google Cloud Run](https://cloud.google.com/run) and exposed as an internal service with a dedicated service account.
 
 **2. Cloud Functions**
 
@@ -86,12 +86,12 @@ The pipeline module orchestrates training and orchestration of the toxicity mode
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Follow these steps to config and deploy the Antidote framework:
+Follow these steps to config and deploy the Clean Chat framework:
 
 1. Clone the repo
 
     ```
-    git clone https://github.com/googleforgames/antidote.git
+    git clone https://github.com/googleforgames/clean-chat
     ```
 
 2. Make a copy of the [config.default](./config.default)
@@ -143,7 +143,9 @@ There are currently two ways to score toxicity, both which can be demoed & teste
 # Option #1 
 # Hello World example to ensure that the Backend API service is responding.
 python3 ./examples/api-backend-get-test.py
+```
 
+```
 # Option #2
 # Run the Chat/Text Message example
 python3 ./examples/api-backend-post-text.py
@@ -157,7 +159,7 @@ python3 ./examples/api-backend-post-audio.py
 
 ## Toxicity Model Sidecar
 
-Antidote comes pre-packaged with a framework to train, test, and deploy toxicity detection models. Currently, the framework supports models that detect toxicity in voice and text chat. Antidote provides two model training interfaces; one basic training interface that only utilizes the training features of Keras, and one that supports an ML Ops framework. 
+Clean Chat comes pre-packaged with a framework to train, test, and deploy toxicity detection models. Currently, the framework supports models that detect toxicity in voice and text chat. Clean Chat provides two model training interfaces; one basic training interface that only utilizes the training features of Keras, and one that supports an ML Ops framework. 
 
 ## Model Choices
 
@@ -178,7 +180,7 @@ BERT is a transformer language model developed by Google in 2018. BERT is availa
 
 #### Model Training with TFX (ML Ops)
 
-This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Antidote currently supports the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model in a TFX framework. 
+This module presents a packaged TFX pipeline for training and deploying your own custom toxicity model. Clean Chat currently supports the [TF Hub BERT Model](https://tfhub.dev/) as it's base language model in a TFX framework. 
 
 The architecture consists of: 
 - The model pipeline (tfx_pipeline.py). A TFX/Kubeflow pipeline to transform the training data, train the model, and push the resulting model artifact 
@@ -242,7 +244,7 @@ make serve-latest-model
 
 Project is currently in alpha status, and is being actively developed. Expect things to break.
 
-See the [open issues](https://github.com/googleforgames/antidote/issues) for a list of proposed features (and known issues).
+See the [open issues](https://github.com/googleforgames/clean-chat/issues) for a list of proposed features (and known issues).
 
 
 <!-- CONTRIBUTING -->
@@ -252,7 +254,7 @@ Participation in this project comes under the Contributor Covenant Code of Condu
 
 Please read the contributing guide for directions on writing code and submitting Pull Requests.
 
-Antidote is in active development - we would love your help in shaping its future!
+Clean Chat is in active development - we would love your help in shaping its future!
 
 <!-- LICENSE -->
 ## License
@@ -273,12 +275,12 @@ Distributed under the Apache 2.0 License. See `LICENSE` for more information.
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [contributors-shield]: https://img.shields.io/github/contributors/googleforgames/repo.svg?style=for-the-badge
-[contributors-url]: https://github.com/googleforgames/antidote/graphs/contributors
+[contributors-url]: https://github.com/googleforgames/clean-chat/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/googleforgames/repo.svg?style=for-the-badge
-[forks-url]: https://github.com/googleforgames/antidote/network/members
+[forks-url]: https://github.com/googleforgames/clean-chat/network/members
 [stars-shield]: https://img.shields.io/github/stars/googleforgames/repo.svg?style=for-the-badge
-[stars-url]: https://github.com/googleforgames/antidote/stargazers
+[stars-url]: https://github.com/googleforgames/clean-chat/stargazers
 [issues-shield]: https://img.shields.io/github/issues/googleforgames/repo.svg?style=for-the-badge
-[issues-url]: https://github.com/googleforgames/antidote/issues
+[issues-url]: https://github.com/googleforgames/clean-chat/issues
 [license-shield]: https://img.shields.io/github/license/googleforgames/repo.svg?style=for-the-badge
-[license-url]: https://github.com/googleforgames/antidote/blob/master/LICENSE.txt
+[license-url]: https://github.com/googleforgames/clean-chat/blob/master/LICENSE.txt
