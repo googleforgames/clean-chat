@@ -135,9 +135,9 @@ Follow these steps to config and deploy the Clean Chat framework:
     make make deploy-backend-api
     ```
 
-## Demo Examples
+## Examples
 
-There are currently two ways to score toxicity, both which can be demoed & tested. The demo examples include: 
+As an example, and for testing purposes, here are a few sample scripts that can be called once the framework has been deployed:
 
 ```
 # Option #1 
