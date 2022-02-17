@@ -308,6 +308,11 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-short" {
   depends_on = [
     google_project_service.gcp_services["cloudfunctions.googleapis.com"]
   ]
+
+  timeouts {
+    create = "10m"
+    delete = "5m"
+  }
 }
 
 resource "google_cloudfunctions_function" "cf-speech-to-text-long" {
@@ -334,6 +339,11 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-long" {
   depends_on = [
     google_project_service.gcp_services["cloudfunctions.googleapis.com"]
   ]
+
+  timeouts {
+    create = "10m"
+    delete = "5m"
+  }
 }
 
 resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
@@ -361,6 +371,11 @@ resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
   depends_on = [
     google_project_service.gcp_services["cloudfunctions.googleapis.com"]
   ]
+
+  timeouts {
+    create = "10m"
+    delete = "5m"
+  }
 }
 
 /******************************************************

@@ -149,7 +149,7 @@ export TF_VAR_TOXIC_USER_THRESHOLD=0.60
 ######################################################
 
 # GKE cluster name for ML Pipeline
-export TF_VAR_ML_CLUSTER=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-pipeline-cluster
+export TF_VAR_ML_CLUSTER=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-ml-cluster
 
 # GKE zone
 export TF_VAR_ML_ZONE=${TF_VAR_GCP_REGION}
