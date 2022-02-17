@@ -88,6 +88,8 @@ The pipeline module orchestrates training and orchestration of the toxicity mode
 
 Follow these steps to config and deploy the Clean Chat framework:
 
+NOTE: If you're deploying from Google Cloud Shell, you may need to run ```./tools/cloud_shell_setup.sh``` prior to running Terraform. There is a open/known issue with Terraform not honoring OS IPv4 settings.
+
 1. Clone the repo
 
     ```
@@ -132,7 +134,7 @@ Follow these steps to config and deploy the Clean Chat framework:
 7.  Deploy the API Backend Service
 
     ```
-    make make deploy-backend-api
+    make deploy-backend-api
     ```
 
 ## Examples
