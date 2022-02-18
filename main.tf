@@ -306,7 +306,8 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-short" {
   }
   
   depends_on = [
-    google_project_service.gcp_services["cloudfunctions.googleapis.com"]
+    time_sleep.wait_x_seconds,
+    google_project_service.gcp_services["cloudfunctions.googleapis.com"],
   ]
 
   timeouts {
@@ -337,7 +338,8 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-long" {
   }
 
   depends_on = [
-    google_project_service.gcp_services["cloudfunctions.googleapis.com"]
+    time_sleep.wait_x_seconds,
+    google_project_service.gcp_services["cloudfunctions.googleapis.com"],
   ]
 
   timeouts {
@@ -369,7 +371,8 @@ resource "google_cloudfunctions_function" "cf-send-to-pubsub" {
   }
 
   depends_on = [
-    google_project_service.gcp_services["cloudfunctions.googleapis.com"]
+    time_sleep.wait_x_seconds,
+    google_project_service.gcp_services["cloudfunctions.googleapis.com"],
   ]
 
   timeouts {
@@ -453,4 +456,16 @@ resource "google_project_iam_member" "iam_for_backend_api_gcs" {
   depends_on = [
     google_service_account.sa
   ]
+}
+
+/******************************************************
+
+Sleep Resource
+
+*******************************************************/
+
+resource "null_resource" "previous" {}
+resource "time_sleep" "wait_x_seconds" {
+  depends_on = [null_resource.previous]
+  create_duration = "120s"
 }
