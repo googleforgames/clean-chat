@@ -83,6 +83,19 @@ The pipeline module orchestrates training and orchestration of the toxicity mode
 ## Reference Architecture
 ![Architecture](./assets/images/reference_architecture.png)
 
+---
+
+<!-- GETTING STARTED -->
+## Dependencies
+
+The following dependencies should be install on you client prior to deploying the Clean Chat framework. The dependencies are:
+
+1. Terraform ([Install Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli))
+2. Docker ([Install Docker](https://docs.docker.com/engine/install/))
+3. Google Cloud SDK ([Install gcloud](https://cloud.google.com/sdk/docs/install))
+
+---
+
 <!-- GETTING STARTED -->
 ## Getting Started
 
@@ -137,6 +150,8 @@ NOTE: If you're deploying from Google Cloud Shell, you may need to run ```./tool
     make deploy-backend-api
     ```
 
+---
+
 ## Examples
 
 As an example, and for testing purposes, here are a few sample scripts that can be called once the framework has been deployed:
@@ -158,6 +173,8 @@ python3 ./examples/api-backend-post-text.py
 # Run the Audio Demo
 python3 ./examples/api-backend-post-audio.py
 ```
+
+---
 
 ## Toxicity Model Sidecar
 
@@ -270,9 +287,6 @@ Distributed under the Apache 2.0 License. See `LICENSE` for more information.
 * [Jigsaw Perspective API](https://www.perspectiveapi.com/)
 * [Dataset - Kaggle Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge)
 * [Dataset - Kaggle League of Legends Tribunal Chatlogs](https://www.kaggle.com/simshengxue/league-of-legends-tribunal-chatlogs)
-* [Dataset - Cyber Bullying](https://data.mendeley.com/datasets/jf4pzyvnpj/1#__sid=js0)
-* [GCP - Building a pipeline to profile audio content](https://cloud.google.com/architecture/building-a-pipeline-to-profile-audio-content#deploy_the_cloud_function_that_tests_for_appropriate_content)
-* [GCP - Implementing production-ready live audio transcription using Speech-to-Text](https://cloud.google.com/architecture/architecture-for-production-ready-live-transcription-tutorial)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
