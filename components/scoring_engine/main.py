@@ -21,8 +21,9 @@ import logging
 import time
 import argparse
 import json
+import re
 import apache_beam as beam
-from apache_beam import window
+from apache_beam import window, WindowInto
 from apache_beam.transforms import trigger
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import StandardOptions
@@ -39,6 +40,18 @@ class ToxicityPipeline(object):
             {'name': 'score',          'type': 'FLOAT64', 'mode': 'NULLABLE'}
         ]}
     
+    def parse_sentence_lightweight(self, text):
+        sentences = re.split('\. |\? |\! ', text)
+        sentences = [sent for sent in sentences if sent!=None and len(sent)>=3]
+        return sentences
+    
+    def parse_sentence_nltk(self, text):
+        #import nltk
+        #nltk.download('punkt')
+        sentences = nltk.tokenize.sent_tokenize(text)
+        sentences = [sent for sent in sentences if sent!=None and len(sent)>=3]
+        return sentences
+    
     def parse_pubsub(self, event):
         json_payload = json.loads(event)
         
@@ -47,6 +60,10 @@ class ToxicityPipeline(object):
             json_payload['timestamp'] = int(time.time())
         
         return json_payload
+    
+    def generate_elements(self, elements):
+        for element in elements:
+            yield element
     
     def preprocess_event(self, event):
         return ((event['userid']), event)
@@ -94,10 +111,22 @@ class ToxicityPipeline(object):
         }
         '''
         try:
-            score_payload = scoring_logic.model(event['text'], perspective_apikey)
-            event['score']        = score_payload['score']
-            event['score_detail'] = score_payload
-            return event
+            # Split text into sentences
+            original_text = event['text']
+            sentences     = self.parse_sentence_lightweight(original_text)
+            
+            sentences_payload = []
+            for sentence in sentences:
+                sentence_payload = {k:v for k,v in event.items() if k not in 'text'}
+                sentence_payload['text'] = sentence
+                
+                # Score Sentence
+                score_payload = scoring_logic.model(sentence, perspective_apikey)
+                sentence_payload['score']        = score_payload['score']
+                sentence_payload['score_detail'] = score_payload
+                sentences_payload.append(sentence_payload)
+            
+            return sentences_payload
         except Exception as e:
             print(f'[ Exception ] At score_event. {e}')
             # Pass a default score.
@@ -107,15 +136,6 @@ class ToxicityPipeline(object):
             return event
     
     def result_post_processing(self, event):
-        # If the text variable is greater than X characters, then do not 
-        # send as part of the response payload. This has been added to 
-        # control for, and limit, large text payloads from being sent as 
-        # part of the response. This condition can be removed if it's 
-        # desirable to receive text (no matter the size) as part of the 
-        # response payload.
-        if len(event['text']) > 1000:
-            event = {k:v for k,v in event.items() if k not in 'text'}
-        
         return event
     
     def run_pipeline(self, known_args, pipeline_args):
@@ -142,7 +162,6 @@ class ToxicityPipeline(object):
             # Parse events
             parsed_events = (
                 raw_events  | 'parsed events' >> beam.Map(self.parse_pubsub)
-                            | 'set_timestamp' >> beam.Map(lambda x: window.TimestampedValue(x, x['timestamp']))
             )
             
             score_events = (
@@ -154,7 +173,8 @@ class ToxicityPipeline(object):
             
             # Tranform events
             events_window = (
-                parsed_events   | 'window_preprocessing' >> beam.Map(self.preprocess_event)
+                score_events    | 'split by sentence for toxic flag' >> beam.FlatMap(self.generate_elements)
+                                | 'window_preprocessing' >> beam.Map(self.preprocess_event)
                                 | 'windowing' >> beam.WindowInto(window.SlidingWindows(known_args.window_duration_seconds, known_args.window_sliding_seconds)) # Default window is 30 seconds in length, and a new window begins every 5 seconds
                                 | 'window_grouping' >> beam.GroupByKey()
                                 | 'window_aggregation' >> beam.Map(self.avg_by_group)
@@ -174,7 +194,7 @@ class ToxicityPipeline(object):
                         | 'write to toxic topic' >> beam.io.WriteToPubSub(known_args.pubsub_topic_toxic)
             )
             
-            # Write scored events to PubSub (where it can be pushed to a designed endpoint URL)
+            # Write scored events to PubSub
             (
             score_events | 'results post-processing' >> beam.Map(self.result_post_processing)
                          | 'convert scored msg'      >> beam.Map(self.convert_to_bytestring)
@@ -183,8 +203,9 @@ class ToxicityPipeline(object):
             
             # Write all events into BigQuery (for analysis and model retraining)
             (
-            score_events |  beam.Map(self.bq_preprocessing)
-                        |  'scored_events to bq' >> beam.io.gcp.bigquery.WriteToBigQuery(
+            score_events |  'split by sentence payload' >> beam.FlatMap(self.generate_elements)
+                         |  'preprocessing for bq' >> beam.Map(self.bq_preprocessing)
+                         |  'scored_events to bq' >> beam.io.gcp.bigquery.WriteToBigQuery(
                             table=known_args.bq_table_name,
                             dataset=known_args.bq_dataset_name,
                             project=known_args.gcp_project,

@@ -75,21 +75,6 @@ def pubsub_publish( pubsub_publisher, project_id, pubsub_topic, message ):
         print('[ EXCEPTION ] {}'.format(e))
 
 
-def parse_sentence_lightweight(text):
-    import re
-    sentences = re.split('\. |\? |\! ', text)
-    sentences = [sent for sent in sentences if sent!=None and len(sent)>=3]
-    return sentences
-
-
-def parse_sentence_nltk(text):
-    import nltk
-    nltk.download('punkt')
-    sentences = nltk.tokenize.sent_tokenize(text)
-    sentences = [sent for sent in sentences if sent!=None and len(sent)>=3]
-    return sentences
-
-
 def main(event,context):
     
     # Parse input event parameters
@@ -116,13 +101,5 @@ def main(event,context):
     if 'timestamp' not in payload:
         payload['timestamp'] = int(time.time())
     
-    # Split text into sentences prior to sending to scoring engine
-    original_text = payload['text']
-    sentences     = parse_sentence_lightweight(original_text)
-    
-    for sentence in sentences:
-        sentence_payload = payload
-        sentence_payload['text'] = sentence
-        
-        # Write message payload to PubSub
-        pubsub_publish( pubsub_publisher, project_id=gcp_project_id, pubsub_topic=pubsub_topic, message=sentence_payload )
+    # Write message payload to PubSub
+    pubsub_publish( pubsub_publisher, project_id=gcp_project_id, pubsub_topic=pubsub_topic, message=payload )
