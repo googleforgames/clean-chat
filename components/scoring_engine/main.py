@@ -121,7 +121,7 @@ class ToxicityPipeline(object):
                 sentence_payload['text'] = sentence
                 
                 # Score Sentence
-                score_payload = scoring_logic.model(sentence, perspective_apikey)
+                score_payload = scoring_logic.model(sentence, model_api_key)
                 sentence_payload['score']        = score_payload['score']
                 sentence_payload['score_detail'] = score_payload
                 sentences_payload.append(sentence_payload)
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     parser.add_argument('--runner',                  required=True,  default='DirectRunner',       help='Dataflow Runner - DataflowRunner or DirectRunner (local)')
     parser.add_argument('--extra_package',           required=True,  default='scoring_logic-0.1.tar.gz', help='Local python dependency that contains the scoring logic and ML model')
     parser.add_argument('--toxic_user_threshold',    required=True,  default=0.60, type=float,     help='Toxic threshold on a scale of 0-1. Anything over this threshold will be flagged as toxic.')
-    parser.add_argument('--perspective_apikey',      required=False, default='',                   help='Perspective API key. Generated via GCP Credentials')
+    parser.add_argument('--model_api_key',           required=False, default='',                   help='Model API key')
     known_args, pipeline_args = parser.parse_known_args()
     
     # Set GOOGLE_CLOUD_PROJECT environ variable
@@ -247,8 +247,8 @@ if __name__ == '__main__':
     # Load Toxic threshold parameter
     toxic_user_threshold = known_args.toxic_user_threshold
     
-    # Load Perspective API (optional: only used if using Perspective API)
-    perspective_apikey   = known_args.perspective_apikey
+    # Get model API key (optional: only used if using a model that requires an API key)
+    model_api_key = known_args.model_api_key
     
     pipeline_args.extend([
         '--runner={}'.format(known_args.runner),                          # DataflowRunner or DirectRunner (local)
