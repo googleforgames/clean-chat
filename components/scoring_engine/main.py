@@ -78,8 +78,15 @@ class ToxicityPipeline(object):
         return bq_payload
     
     def avg_by_group(self, tuple):
-        (k,v) = tuple
-        return {"userid":k, "score": sum([record['score'] for record in v])/len(v)} 
+        try:
+            (k,v) = tuple
+            if len(v) != 0:
+                return {"userid":k, "score": sum([record['score'] for record in v if 'score' in record])/len(v)}
+            else:
+                return {"userid":k, "score": 0}
+        except Exception as e:
+            print(f'[ EXCEPTION ] At avg_by_group. {e}')
+            return {"userid":k, "score": 0}
     
     def convert_to_bytestring(self, event):
         try:
@@ -92,13 +99,16 @@ class ToxicityPipeline(object):
         
         send_toxic_signal = False
         
-        if event['userid'] not in toxic_usernames:    
-            if event['score'] >= float(toxic_user_threshold):
-                send_toxic_signal = True
-                toxic_usernames.add(event['userid'])
-        else:
-            if event['score'] < float(toxic_user_threshold):
-                toxic_usernames.remove(event['userid'])
+        try:
+            if event['userid'] not in toxic_usernames:    
+                if event['score'] >= float(toxic_user_threshold):
+                    send_toxic_signal = True
+                    toxic_usernames.add(event['userid'])
+            else:
+                if event['score'] < float(toxic_user_threshold):
+                    toxic_usernames.remove(event['userid'])
+        except Exception as e:
+            print(f'[ EXCEPTION ] At is_toxic. {e}')
         
         return send_toxic_signal
     
