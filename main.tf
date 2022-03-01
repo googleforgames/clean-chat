@@ -103,6 +103,13 @@ resource "google_storage_bucket" "audio-dropzone-long" {
   force_destroy = true
 }
 
+resource "google_storage_bucket" "audio-stt-results" {
+  name          = "${var.GCS_BUCKET_AUDIO_STT_RESULTS}"
+  location      = "US"
+  storage_class = "STANDARD"
+  force_destroy = true
+}
+
 resource "google_storage_bucket" "gcs-for-cloud-functions" {
   name          = "${var.GCS_BUCKET_CLOUD_FUNCTIONS}"
   location      = "US"
@@ -259,6 +266,12 @@ data "archive_file" "cf-speech-to-text-long-zip" {
  output_path = "./components/cloud_functions/speech_to_text_long.zip"
 }
 
+data "archive_file" "cf-speech-to-text-long-postprocessing-zip" {
+ type        = "zip"
+ source_dir  = "./components/cloud_functions/speech_to_text_long_postprocessing"
+ output_path = "./components/cloud_functions/speech_to_text_long_postprocessing.zip"
+}
+
 data "archive_file" "cf-send-to-pubsub-zip" {
  type        = "zip"
  source_dir  = "./components/cloud_functions/send_to_pubsub"
@@ -276,6 +289,12 @@ resource "google_storage_bucket_object" "cf-speech-to-text-long-zip" {
  name   = "speech_to_text_long.zip"
  bucket = "${google_storage_bucket.gcs-for-cloud-functions.name}"
  source = "./components/cloud_functions/speech_to_text_long.zip"
+}
+
+resource "google_storage_bucket_object" "cf-speech-to-text-long-postprocessing-zip" {
+ name   = "speech_to_text_long_postprocessing.zip"
+ bucket = "${google_storage_bucket.gcs-for-cloud-functions.name}"
+ source = "./components/cloud_functions/speech_to_text_long_postprocessing.zip"
 }
 
 resource "google_storage_bucket_object" "cf-send-to-pubsub-zip" {
@@ -322,19 +341,52 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-long" {
   source_archive_bucket = "${google_storage_bucket_object.cf-speech-to-text-long-zip.bucket}"
   source_archive_object = "${google_storage_bucket_object.cf-speech-to-text-long-zip.name}"
   runtime               = "python39"
-  available_memory_mb   = 1024
-  max_instances         = 3
-  timeout               = 480
+  available_memory_mb   = 512
+  max_instances         = 50
+  timeout               = 120
+  region                = "${var.GCP_REGION}"
+  entry_point           = "main"
+  
+  environment_variables = {
+    gcs_results_stt = google_storage_bucket.audio-stt-results.name
+  }
+  
+  event_trigger {
+      event_type = "google.storage.object.finalize"
+      resource   = google_storage_bucket.audio-dropzone-long.name
+  }
+  
+  depends_on = [
+    time_sleep.wait_x_seconds,
+    google_project_service.gcp_services["cloudfunctions.googleapis.com"],
+  ]
+  
+  timeouts {
+    create = "10m"
+    delete = "5m"
+  }
+}
+
+resource "google_cloudfunctions_function" "cf-speech-to-text-long-postprocessing" {
+  name                  = "${var.SOLUTION_NAME}-speech-to-text-long-postprocessing"
+  description           = "${var.SOLUTION_NAME} Speech-to-Text long postprocessing"
+  source_archive_bucket = "${google_storage_bucket_object.cf-speech-to-text-long-postprocessing-zip.bucket}"
+  source_archive_object = "${google_storage_bucket_object.cf-speech-to-text-long-postprocessing-zip.name}"
+  runtime               = "python39"
+  available_memory_mb   = 512
+  max_instances         = 50
+  timeout               = 120
   region                = "${var.GCP_REGION}"
   entry_point           = "main"
   
   environment_variables = {
     gcs_results_bucket = google_storage_bucket.text-dropzone.name
+    gcs_audio_long_bucket = google_storage_bucket.audio-dropzone-long.name
   }
 
   event_trigger {
       event_type = "google.storage.object.finalize"
-      resource   = google_storage_bucket.audio-dropzone-long.name
+      resource   = google_storage_bucket.audio-stt-results.name
   }
 
   depends_on = [
