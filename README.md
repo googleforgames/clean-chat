@@ -9,7 +9,7 @@
 
 
   <p align="center">
-     OSS framework detecting disruptive behavior in games
+     OSS Framework for Detecting Toxic Speech in Games
   </p>
 </p>
 
