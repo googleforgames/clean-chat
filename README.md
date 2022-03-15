@@ -5,9 +5,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <img src="assets/images/clean-chat-logo.png" alt="Logo" width="80" height="80">
+  <img src="assets/images/clean-chat-logo.png" alt="Logo" width="659" height="105">
 
-  <h3 align="center">Clean Chat</h3>
 
   <p align="center">
      OSS framework detecting disruptive behavior in games
