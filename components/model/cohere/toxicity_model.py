@@ -29,26 +29,38 @@ from tf.keras.callbacks import ModelCheckpoint
 class Model(object):
 	''' Basic Keras Model for Toxicity Classification. Used to demonstate appropriate use of classification layer. Not to be used in production''' 
 	def init(self, **kwargs): 
-		super(BasicModel, self).__init__(*args, **kwargs)
+		super(Model, self).__init__(*args, **kwargs)
         pass
 
 	def model(embed_length): 
-		input = tf.keras.Input(shape=(embed_length,), dtype="float32")
-		x = layers.Dropout(0.5)(x)
-		x = layers.Dense(512, activation="relu")(x)
-		x = layers.Dropout(0.5)(x)
-		x = layers.Dense(256, activation="relu")(x)
-		x = layers.Dropout(0.5)(x)
-		predictions = layers.(Dense(120, activation='softmax')) 
-		model = Model(input, predictions)
-		model.compile(loss=BinaryCrossentropy(),
+		embedded_input = tf.keras.Input(shape=(embed_length,), dtype="float32")
+		net = tf.keras.layers.Dense(2000, activation=tf.keras.activations.relu)(embedded_input)
+    	net = tf.keras.layers.Dropout(0.1)(net)
+    	net = tf.keras.layers.Dense(500, activation=tf.keras.activations.relu)(embedded_input)
+    	net = tf.keras.layers.Dropout(0.1)(net)
+    	preds = tf.keras.layers.Dense(1, activation=tf.keras.activations.sigmoid, name='regression_layer')(net)
+		model = Model(embedded_input, preds)
+		model.compile(loss=tf.keras.losses.MeanAbsoluteError(),
                   optimizer=Adam(learning_rate=1e-3),
-                  metrics=Accuracy())
+                  metrics=[tf.metrics.MeanSquaredError(), tf.keras.metrics.Accuracy()]
+                  )
 		return model 
 
-	def fit(train_embeddings, labels_train, save_dir): 
+	def fit(train_embeddings, labels_train, test_embeddings, labels_test, save_dir): 
 		'''Fit Model, Save to GCS Bucket'''
-		self.model.fit(train_embeddings, labels_train, batch_size=32, epochs=5, verbose=1, validation_split=0.1, shuffle=True)
+		early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=2)
+		checkpoint_filepath = '/tmp/checkpoint'
+		model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
+    		filepath=checkpoint_filepath,
+    		save_weights_only=True,
+    		monitor='val_accuracy',
+    		mode='max',
+    		save_best_only=True)
+
+		self.model.fit(x=train_embeddings, y=labels_train, validation_split=0.2, epochs=200, callbacks=[early_stop, model_checkpoint])
+		loss, accuracy = model.evaluate(test_embeddings, labels_test)
+		print(f'Loss: {loss}')
+		print(f'Accuracy: {accuracy}')
 		self.model.save(save_dir)
 
 

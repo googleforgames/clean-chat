@@ -43,40 +43,57 @@ class Cohere(object, key):
             embeddings += emb
         return embeddings
 
-	def preprocess(self, data_path, model_id):
-		if: 
-			google.cloud.bigquery.Client()
-			table = bigquery.TableReference.from_string(
-    		"bigquery-public-data.utility_us.country_code_iso"
-			)
-			rows = bqclient.list_rows(
-    			table,
-    			selected_fields=[
-        			bigquery.SchemaField("country_name", "STRING"), /
-        			bigquery.SchemaField("fips_code", "STRING"),
-    			],
-			)
-			data = rows.to_dataframe()
-		else:
-			data = pd.read_csv(data_path)
+    def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+	def retry(fun, max_tries=5):
+  		backoff = 1
+  		i = 0
+  		while True:
+    		try:
+      			return fun()
+      			break
+    		except Exception as e:
+      			if i == max_tries:
+        			raise e
+      			time.sleep(backoff)
+      			backoff**2
+      			i+=1
+      			continue
+
+	def read_data(self, data_path):
+		data = pd.read_csv(data_path)
+		training_data = data.sample(frac=0.8, random_state=25)
+		testing_data = data.drop(training_data.index)
+
+		return training_data, testing_data
+
+	def preprocess(self, model_id, data):		
+
+		training_data = data.sample(frac=0.8, random_state=25)
+		testing_data = data.drop(training_data.index)
 
 		# Truncate Long Sentences. Cohere Only Supports 512 characters
 		data['comment_text'] = data['comment_text'].str.slice(stop=511)
 
-		# Training Data
-		sentences = list(data.iloc[:,1].values)
-		labels  = list(data.iloc[:,0].values)
+		comment_lists = chunks(list(data['comment_text']), 100)
+		result = []
+		for batch in comment_lists:
+  			result += (retry(lambda: self.client.embed(model_id, batch)).embeddings)
+  			time.sleep(5)
+  		data.loc[:,'embedded_text'] = result
 
-		# Embedding Data
-		embeddings = self.batch_embed(examples=sentences, batch_size=5, model_id='small-20211115')
-
-		return embeddings, labels
+		return data
 
 if __name__ == '__main__':
 
 	logging.warning('Creating Embeddings')
 	cohere = Cohere(sys.argv[1])
-	embeddings, labels = cohere.preprocess(sys.argv[2], sys.argv[3])
+	training_data, testing_data = Cohere.read_data(sys.argv[2])
+	train_data = Cohere.preprocess(sys.argv[3], training_data)
+	test_data = Cohere.preprocess(sys.argv[3], testing_data)
 	logging.warning('Embeddings Successfully Retrieved')
 	sys.stdout.write('Proceed with Training?')
 	choice = raw_input().lower()
@@ -85,9 +102,9 @@ if __name__ == '__main__':
 		embed_length = len(embeddings[1])
 		model = Model().model(embed_length)
 		## Fit and save to GCS bucket
-		model.fit(embeddings,labels, gcs_location) 
+		model.fit(train_data['embedded_text'], train_data['target'], test_data['embedded_text'], test_data['target'], gcs_location) 
 	elif choice in no:
-   		return embeddings, labels
+   		return train_embeddings, train_labels, test_embeddings, test_labels
 	else:
    		sys.stdout.write("Please respond with 'yes' or 'no'")
     
