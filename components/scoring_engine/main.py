@@ -21,8 +21,9 @@ import logging
 import time
 import argparse
 import json
+import re
 import apache_beam as beam
-from apache_beam import window
+from apache_beam import window, WindowInto
 from apache_beam.transforms import trigger
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import StandardOptions
@@ -39,6 +40,18 @@ class ToxicityPipeline(object):
             {'name': 'score',          'type': 'FLOAT64', 'mode': 'NULLABLE'}
         ]}
     
+    def parse_sentence_lightweight(self, text):
+        sentences = re.split('\. |\? |\! ', text)
+        sentences = [sent for sent in sentences if sent!=None and len(sent)>=3]
+        return sentences
+    
+    def parse_sentence_nltk(self, text):
+        #import nltk
+        #nltk.download('punkt')
+        sentences = nltk.tokenize.sent_tokenize(text)
+        sentences = [sent for sent in sentences if sent!=None and len(sent)>=3]
+        return sentences
+    
     def parse_pubsub(self, event):
         json_payload = json.loads(event)
         
@@ -47,6 +60,10 @@ class ToxicityPipeline(object):
             json_payload['timestamp'] = int(time.time())
         
         return json_payload
+    
+    def generate_elements(self, elements):
+        for element in elements:
+            yield element
     
     def preprocess_event(self, event):
         return ((event['userid']), event)
@@ -61,8 +78,15 @@ class ToxicityPipeline(object):
         return bq_payload
     
     def avg_by_group(self, tuple):
-        (k,v) = tuple
-        return {"userid":k, "score": sum([record['score'] for record in v])/len(v)} 
+        try:
+            (k,v) = tuple
+            if len(v) != 0:
+                return {"userid":k, "score": sum([record['score'] for record in v if 'score' in record])/len(v)}
+            else:
+                return {"userid":k, "score": 0}
+        except Exception as e:
+            print(f'[ EXCEPTION ] At avg_by_group. {e}')
+            return {"userid":k, "score": 0}
     
     def convert_to_bytestring(self, event):
         try:
@@ -75,13 +99,16 @@ class ToxicityPipeline(object):
         
         send_toxic_signal = False
         
-        if event['userid'] not in toxic_usernames:    
-            if event['score'] >= float(toxic_user_threshold):
-                send_toxic_signal = True
-                toxic_usernames.add(event['userid'])
-        else:
-            if event['score'] < float(toxic_user_threshold):
-                toxic_usernames.remove(event['userid'])
+        try:
+            if event['userid'] not in toxic_usernames:    
+                if event['score'] >= float(toxic_user_threshold):
+                    send_toxic_signal = True
+                    toxic_usernames.add(event['userid'])
+            else:
+                if event['score'] < float(toxic_user_threshold):
+                    toxic_usernames.remove(event['userid'])
+        except Exception as e:
+            print(f'[ EXCEPTION ] At is_toxic. {e}')
         
         return send_toxic_signal
     
@@ -94,10 +121,22 @@ class ToxicityPipeline(object):
         }
         '''
         try:
-            score_payload = scoring_logic.model(event['text'], perspective_apikey)
-            event['score']        = score_payload['score']
-            event['score_detail'] = score_payload
-            return event
+            # Split text into sentences
+            original_text = event['text']
+            sentences     = self.parse_sentence_lightweight(original_text)
+            
+            sentences_payload = []
+            for sentence in sentences:
+                sentence_payload = {k:v for k,v in event.items() if k not in 'text'}
+                sentence_payload['text'] = sentence
+                
+                # Score Sentence
+                score_payload = scoring_logic.model(sentence, model_api_key)
+                sentence_payload['score']        = score_payload['score']
+                sentence_payload['score_detail'] = score_payload
+                sentences_payload.append(sentence_payload)
+            
+            return sentences_payload
         except Exception as e:
             print(f'[ Exception ] At score_event. {e}')
             # Pass a default score.
@@ -107,15 +146,6 @@ class ToxicityPipeline(object):
             return event
     
     def result_post_processing(self, event):
-        # If the text variable is greater than X characters, then do not 
-        # send as part of the response payload. This has been added to 
-        # control for, and limit, large text payloads from being sent as 
-        # part of the response. This condition can be removed if it's 
-        # desirable to receive text (no matter the size) as part of the 
-        # response payload.
-        if len(event['text']) > 1000:
-            event = {k:v for k,v in event.items() if k not in 'text'}
-        
         return event
     
     def run_pipeline(self, known_args, pipeline_args):
@@ -142,7 +172,6 @@ class ToxicityPipeline(object):
             # Parse events
             parsed_events = (
                 raw_events  | 'parsed events' >> beam.Map(self.parse_pubsub)
-                            | 'set_timestamp' >> beam.Map(lambda x: window.TimestampedValue(x, x['timestamp']))
             )
             
             score_events = (
@@ -154,7 +183,8 @@ class ToxicityPipeline(object):
             
             # Tranform events
             events_window = (
-                parsed_events   | 'window_preprocessing' >> beam.Map(self.preprocess_event)
+                score_events    | 'split by sentence for toxic flag' >> beam.FlatMap(self.generate_elements)
+                                | 'window_preprocessing' >> beam.Map(self.preprocess_event)
                                 | 'windowing' >> beam.WindowInto(window.SlidingWindows(known_args.window_duration_seconds, known_args.window_sliding_seconds)) # Default window is 30 seconds in length, and a new window begins every 5 seconds
                                 | 'window_grouping' >> beam.GroupByKey()
                                 | 'window_aggregation' >> beam.Map(self.avg_by_group)
@@ -174,7 +204,7 @@ class ToxicityPipeline(object):
                         | 'write to toxic topic' >> beam.io.WriteToPubSub(known_args.pubsub_topic_toxic)
             )
             
-            # Write scored events to PubSub (where it can be pushed to a designed endpoint URL)
+            # Write scored events to PubSub
             (
             score_events | 'results post-processing' >> beam.Map(self.result_post_processing)
                          | 'convert scored msg'      >> beam.Map(self.convert_to_bytestring)
@@ -183,8 +213,9 @@ class ToxicityPipeline(object):
             
             # Write all events into BigQuery (for analysis and model retraining)
             (
-            score_events |  beam.Map(self.bq_preprocessing)
-                        |  'scored_events to bq' >> beam.io.gcp.bigquery.WriteToBigQuery(
+            score_events |  'split by sentence payload' >> beam.FlatMap(self.generate_elements)
+                         |  'preprocessing for bq' >> beam.Map(self.bq_preprocessing)
+                         |  'scored_events to bq' >> beam.io.gcp.bigquery.WriteToBigQuery(
                             table=known_args.bq_table_name,
                             dataset=known_args.bq_dataset_name,
                             project=known_args.gcp_project,
@@ -213,7 +244,7 @@ if __name__ == '__main__':
     parser.add_argument('--runner',                  required=True,  default='DirectRunner',       help='Dataflow Runner - DataflowRunner or DirectRunner (local)')
     parser.add_argument('--extra_package',           required=True,  default='scoring_logic-0.1.tar.gz', help='Local python dependency that contains the scoring logic and ML model')
     parser.add_argument('--toxic_user_threshold',    required=True,  default=0.60, type=float,     help='Toxic threshold on a scale of 0-1. Anything over this threshold will be flagged as toxic.')
-    parser.add_argument('--perspective_apikey',      required=False, default='',                   help='Perspective API key. Generated via GCP Credentials')
+    parser.add_argument('--model_api_key',           required=False, default='',                   help='Model API key')
     known_args, pipeline_args = parser.parse_known_args()
     
     # Set GOOGLE_CLOUD_PROJECT environ variable
@@ -226,8 +257,8 @@ if __name__ == '__main__':
     # Load Toxic threshold parameter
     toxic_user_threshold = known_args.toxic_user_threshold
     
-    # Load Perspective API (optional: only used if using Perspective API)
-    perspective_apikey   = known_args.perspective_apikey
+    # Get model API key (optional: only used if using a model that requires an API key)
+    model_api_key = known_args.model_api_key
     
     pipeline_args.extend([
         '--runner={}'.format(known_args.runner),                          # DataflowRunner or DirectRunner (local)

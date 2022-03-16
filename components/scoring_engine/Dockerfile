@@ -26,7 +26,7 @@ ENV TF_VAR_WINDOW_DURATION_SECONDS ""
 ENV TF_VAR_WINDOW_SLIDING_SECONDS ""
 ENV TF_VAR_DATAFLOW_RUNNER ""
 ENV TF_VAR_TOXIC_USER_THRESHOLD ""
-ENV TF_VAR_PERSPECTIVE_API_KEY ""
+ENV TF_VAR_MODEL_API_KEY ""
 
 WORKDIR /app
 
@@ -55,4 +55,4 @@ ENTRYPOINT python3 main.py \
 		#--subnetwork "regions/${TF_VAR_DATAFLOW_REGION}/subnetworks/dataflow-subnet" \
 		--extra_package ./dist/scoring_logic-0.1.tar.gz \
 		--toxic_user_threshold ${TF_VAR_TOXIC_USER_THRESHOLD} \
-		--perspective_apikey ${TF_VAR_PERSPECTIVE_API_KEY}
+		--model_api_key ${TF_VAR_MODEL_API_KEY}

@@ -64,6 +64,10 @@ variable "GCS_BUCKET_AUDIO_DROPZONE_LONG" {
     default = ""
 }
 
+variable "GCS_BUCKET_AUDIO_STT_RESULTS" { 
+    default = ""
+}
+
 variable "GCS_BUCKET_CLOUD_FUNCTIONS" { 
     default = ""
 }

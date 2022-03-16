@@ -49,10 +49,10 @@ export TF_VAR_GCP_REGION=us-central1
 # TODO (Optional): User may add their own value prior to deployment
 export TF_VAR_SOLUTION_NAME=clean-chat
 
-# Perspective API Key (if using Perspective as the ML model)
-# Reference: https://developers.perspectiveapi.com/s/about-the-api
-# TODO (Optional): User may add their own value prior to deployment
-export TF_VAR_PERSPECTIVE_API_KEY=""
+# (Optional) Add your model API key here if you choose to 
+# deploy a model that requires an API key, using services from 
+# Cohere.ai, Perspective, etc.
+export TF_VAR_MODEL_API_KEY=""
 
 ######################################################
 # Google Artifact Repo
@@ -71,6 +71,7 @@ export TF_VAR_GCS_BUCKET_TEXT_DROPZONE=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTIO
 # GCS bucket where audio files will be dropped/uploaded.
 export TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_SHORT=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-audio-dropzone-short
 export TF_VAR_GCS_BUCKET_AUDIO_DROPZONE_LONG=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-audio-dropzone-long
+export TF_VAR_GCS_BUCKET_AUDIO_STT_RESULTS=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-audio-stt-results
 
 # GCS bucket for cloud functions tmp space
 export TF_VAR_GCS_BUCKET_CLOUD_FUNCTIONS=${TF_VAR_GCP_PROJECT_ID}-${TF_VAR_SOLUTION_NAME}-cloud-functions

@@ -17,11 +17,9 @@ import datetime,time
 import re,json
 from google.cloud import storage
 from google.cloud.storage.blob import Blob
-from google.cloud import speech
+from google.cloud import speech_v1p1beta1 as speech
 
-
-gcs_results_bucket = os.environ['gcs_results_bucket']
-
+gcs_results_stt = os.environ['gcs_results_stt']
 
 def gcp_storage_upload_string(source_string, bucket_name, blob_name):
     try:
@@ -49,7 +47,7 @@ def gcp_storage_download_as_string(bucket_name, blob_name):
         print('[ EXCEPTION ] {}'.format(e))
 
 
-def gcp_speech_to_text_long(gcs_uri):
+def gcp_speech_to_text_long(gcs_uri, gcs_object_name):
     print(f'[ INFO ] Starting gcp_speech_to_text_long against {gcs_uri}')
     start_time = datetime.datetime.now()
     
@@ -65,24 +63,15 @@ def gcp_speech_to_text_long(gcs_uri):
         enable_automatic_punctuation=True,
     )
     
-    operation = speech_client.long_running_recognize(config=config, audio=audio)
+    output_transcription_name = re.sub('.flac$','.json', gcs_object_name)
     
-    response = operation.result(timeout=480)
+    output_config = speech.TranscriptOutputConfig(gcs_uri=f"gs://{gcs_results_stt}/{output_transcription_name}")
+    request       = speech.LongRunningRecognizeRequest(config=config, audio=audio, output_config=output_config)
+    operation     = speech_client.long_running_recognize(request=request)
+    print(f'[ INFO ] Operation: {operation.metadata}')
+    print(f'[ INFO ] Operation: {operation.result}')
     
-    text_blob_list = []
-    for result in response.results:
-        if result.alternatives[0].transcript not in text_blob_list:
-            text_blob_list.append(result.alternatives[0].transcript)
-        
-        print("Transcript: {}".format(result.alternatives[0].transcript))
-        print("Confidence: {}".format(result.alternatives[0].confidence))
-    
-    text_blob = ' '.join(text_blob_list)
-    runtime = (datetime.datetime.now() - start_time).seconds
-    print('[ INFO ] Speech-to-Text Runtime: {} seconds'.format(runtime))
-    print('[ INFO ] Text Blob: {}'.format(text_blob))
-    
-    return text_blob
+    return True
 
 
 def main(event,context):
@@ -92,17 +81,6 @@ def main(event,context):
         gcs_uri = 'gs://{}/{}'.format(event['bucket'], event['name'])
         
         print('[ INFO ] Processing {}'.format(gcs_uri))
-        text_blob = gcp_speech_to_text_long(gcs_uri)
+        text_blob = gcp_speech_to_text_long(gcs_uri, gcs_object_name=event['name'])
         
-        # Get audio file metadata (if it exists)
-        metadata = gcp_storage_download_as_string(bucket_name=event['bucket'], blob_name=event['name'].lower().replace('.flac','.json'))
-        
-        # Construct Payload
-        payload = json.loads(metadata)
-        payload['text'] = text_blob
-        payload['timestamp'] = payload['timestamp'] if 'timestamp' in payload else int(time.time())
-        
-        blob_name = re.sub('\.[a-zA-Z0-9]{3,4}$', '.txt', event['name'])
-        print(f'[ INFO ] Writing text blob {blob_name} to gs://{gcs_results_bucket}')
-        gcp_storage_upload_string(source_string=json.dumps(payload), bucket_name=gcs_results_bucket, blob_name=blob_name)
-
+        return '200'

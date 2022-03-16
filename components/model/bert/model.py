@@ -22,9 +22,6 @@ import tensorflow as tf
 import tensorflow_transform as tft
 
 from official.nlp import optimization
-
-from tfx.experimental.templates.taxi.models import features
-from tfx.experimental.templates.taxi.models.keras_model import constants
 from tfx_bsl.public import tfxio
 
 
