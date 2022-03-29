@@ -57,27 +57,6 @@ resource "google_project_service" "gcp_services" {
 
 /******************************************************
 
-Google Artifact Repository
-
-*******************************************************/
-
-resource "google_artifact_registry_repository" "clean-chat-repo" {
-  provider = google-beta
-
-  repository_id = "${var.GCP_ARTIFACT_REGISTRY_NAME}"
-  location = "${var.GCP_ARTIFACT_REGISTRY_REGION}"
-  
-  description = "Clean Chat Docker Repository"
-  format = "DOCKER"
-
-  depends_on = [
-    google_project_service.gcp_services["artifactregistry.googleapis.com"]
-  ]
-
-}
-
-/******************************************************
-
 Google Cloud Storage Resources
 
 *******************************************************/

@@ -68,7 +68,10 @@ terraform-init:
 
 terraform-apply:
 	$(info GCP_PROJECT_ID is [${TF_VAR_GCP_PROJECT_ID}])
+	# Create Terraform Resources
 	terraform apply
+	# Create Google Artifact Repo (this will fail if the repo already exists)
+	gcloud artifacts repositories create ${TF_VAR_GCP_ARTIFACT_REGISTRY_NAME} --repository-format=DOCKER --location=${TF_VAR_GCP_ARTIFACT_REGISTRY_REGION} --description="Clean Chat Docker Repository" --async
 
 deploy-scoring-engine:
 	@echo "Deploying Clean-Chat Scoring Engine."

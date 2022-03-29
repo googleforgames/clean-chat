@@ -18,8 +18,10 @@ import re,json
 from google.cloud import storage
 from google.cloud.storage.blob import Blob
 
+
 gcs_audio_long_bucket = os.environ['gcs_audio_long_bucket']
 gcs_results_bucket    = os.environ['gcs_results_bucket']
+
 
 def gcp_storage_upload_string(source_string, bucket_name, blob_name):
     try:
@@ -57,21 +59,20 @@ def main(event,context):
         
         # Iterate over text payload and regroup the text blob.
         text_blob_list = []
+        start_time = '0s'
         for result in blob['results']:
             if result['alternatives'][0]['transcript'] not in text_blob_list:
-                text_blob_list.append(result['alternatives'][0]['transcript'])
-            
-            #print("Transcript: {}".format(result.alternatives[0].transcript))
-            #print("Confidence: {}".format(result.alternatives[0].confidence))
+                text_blob_list.append({'text': result['alternatives'][0]['transcript'], 'start_time': start_time, 'end_time': result['resultEndTime'] })
+                # Update start_time for next iteration
+                start_time = result['resultEndTime']
         
-        text_blob = ' '.join(text_blob_list)
-        print(f'[ INFO ] Text Blob: {text_blob}')
+        print(f'[ INFO ] Text Results: {text_blob_list}')
         
         # Get request metdata
         metadata = gcp_storage_download_as_string(gcs_audio_long_bucket, event['name'])
         metadata = json.loads(metadata)
-        # Update metdata so that it includes the "text" (text_blob) field.
-        metadata['text'] = text_blob
+        # Update metdata to include the text results.
+        metadata['text'] = text_blob_list
         
         print(f'[ INFO ] Saving text results to GCS bucket {gcs_results_bucket}')
         gcp_storage_upload_string(json.dumps(metadata), gcs_results_bucket, event['name'])

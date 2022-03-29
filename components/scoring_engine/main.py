@@ -122,16 +122,24 @@ class ToxicityPipeline(object):
         '''
         try:
             # Split text into sentences
-            original_text = event['text']
-            sentences     = self.parse_sentence_lightweight(original_text)
+            #original_text = event['text']
+            #sentences     = self.parse_sentence_lightweight(original_text)
+            print(f'[ EVENT ] {event}')
+            
+            if type(event['text']) == str:
+                sentence_list = [{'text': event['text']}]
+            else:
+                sentence_list = event['text']
             
             sentences_payload = []
-            for sentence in sentences:
+            for sentence in sentence_list:
                 sentence_payload = {k:v for k,v in event.items() if k not in 'text'}
-                sentence_payload['text'] = sentence
+                sentence_payload['start_time'] = sentence['start_time'] if 'start_time' in sentence else ''
+                sentence_payload['end_time']   = sentence['end_time'] if 'end_time' in sentence else ''
+                sentence_payload['text']       = sentence['text']
                 
                 # Score Sentence
-                score_payload = scoring_logic.model(sentence, model_api_key)
+                score_payload = scoring_logic.model(sentence['text'], model_api_key)
                 sentence_payload['score']        = score_payload['score']
                 sentence_payload['score_detail'] = score_payload
                 sentences_payload.append(sentence_payload)
@@ -143,7 +151,7 @@ class ToxicityPipeline(object):
             score_payload         = {'score':0.00001}
             event['score']        = score_payload['score']
             event['score_detail'] = score_payload
-            return event
+            return [event]
     
     def result_post_processing(self, event):
         return event

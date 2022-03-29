@@ -67,20 +67,20 @@ def gcp_speech_to_text_short(gcs_uri):
     
     response = speech_client.recognize(config=config, audio=audio)
     
-    text_blob_list = []
+    text_blob = []
     for result in response.results:
-        if result.alternatives[0].transcript not in text_blob_list:
-            text_blob_list.append(result.alternatives[0].transcript)
-        
-        print("Transcript: {}".format(result.alternatives[0].transcript))
-        print("Confidence: {}".format(result.alternatives[0].confidence))
+        if result.alternatives[0].transcript not in text_blob:
+            text_blob.append(result.alternatives[0].transcript)
     
-    text_blob = ' '.join(text_blob_list)
+    text_blob = ' '.join(text_blob)
+    print(f'[ INFO ] Text Results: {text_blob}')
+    
     runtime = (datetime.datetime.now() - start_time).seconds
     print('[ INFO ] Speech-to-Text Runtime: {} seconds'.format(runtime))
     print('[ INFO ] Text Blob: {}'.format(text_blob))
     
-    return text_blob
+    text_blob_list = [{'text': text_blob, 'start_time': '0s', 'end_time': '59s'}]
+    return text_blob_list
 
 
 def main(event,context):
