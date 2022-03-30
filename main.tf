@@ -296,6 +296,8 @@ resource "google_cloudfunctions_function" "cf-speech-to-text-short" {
   
   environment_variables = {
     gcs_results_bucket = google_storage_bucket.text-dropzone.name
+    gcp_project_id = "${var.GCP_PROJECT_ID}"
+    enable_alternative_languages = "true"
   }
 
   event_trigger {

@@ -123,10 +123,16 @@ def pubsub_subscriber(project_id, subscription_id):
 def main():
     
     # Demo/Example JSON Payload for Text Chat
-    post_json ={
-        'audio_uri': 'https://github.com/googleforgames/clean-chat/raw/master/assets/test_audio.mp3',
-        'userid':    'user123'
-    }
+    if len(sys.argv) >= 2:
+        payload ={
+            'audio_uri': f'{sys.argv[1]}',
+            'userid':    'user123'
+        }
+    else:
+        payload = {
+            'audio_uri': 'https://github.com/googleforgames/clean-chat/raw/master/assets/test_audio.mp3',
+            'userid':    'user123'
+        }
     
     # Set IAM Policy Binding
     # This grants the email/member to invoke the Cloud Run service
@@ -142,8 +148,8 @@ def main():
         service_url = f'{cloud_run_url}/audio'
         
         print(f'Executing POST request for {service_url}')
-        print(f'POST Payload:\n{json.dumps(post_json,indent=4)}\n')
-        response = make_authorized_request(service_url, post_json)
+        print(f'POST Payload:\n{json.dumps(payload,indent=4)}\n')
+        response = make_authorized_request(service_url, payload)
         
         print(f'{response.status}, {response.read()}')
         
