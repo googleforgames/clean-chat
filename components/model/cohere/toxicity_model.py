@@ -35,10 +35,10 @@ class Model(object):
 	def model(embed_length): 
 		embedded_input = tf.keras.Input(shape=(embed_length,), dtype="float32")
 		net = tf.keras.layers.Dense(2000, activation=tf.keras.activations.relu)(embedded_input)
-    	net = tf.keras.layers.Dropout(0.1)(net)
-    	net = tf.keras.layers.Dense(500, activation=tf.keras.activations.relu)(embedded_input)
-    	net = tf.keras.layers.Dropout(0.1)(net)
-    	preds = tf.keras.layers.Dense(1, activation=tf.keras.activations.sigmoid, name='regression_layer')(net)
+    		net = tf.keras.layers.Dropout(0.1)(net)
+    		net = tf.keras.layers.Dense(500, activation=tf.keras.activations.relu)(embedded_input)
+    		net = tf.keras.layers.Dropout(0.1)(net)
+    		preds = tf.keras.layers.Dense(1, activation=tf.keras.activations.sigmoid, name='regression_layer')(net)
 		model = Model(embedded_input, preds)
 		model.compile(loss=tf.keras.losses.MeanAbsoluteError(),
                   optimizer=Adam(learning_rate=1e-3),
