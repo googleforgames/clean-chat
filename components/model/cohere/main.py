@@ -36,17 +36,17 @@ class Cohere(object, key):
 		self.client  = cohere.Client(key) # ADD YOUR API KEY HERE
 
 	def batch_embed(self, examples, batch_size, model_id):
-        embeddings = []
-        for i in range(0,len(examples),self.batch_size):
-            batch = examples[i:i+self.batch_size]
-            emb = self.client.embed(texts=batch,model=self.model).embeddings
-            embeddings += emb
-        return embeddings
+        	embeddings = []
+        	for i in range(0,len(examples),self.batch_size):
+            	batch = examples[i:i+self.batch_size]
+            	emb = self.client.embed(texts=batch,model=self.model).embeddings
+            	embeddings += emb
+       		return embeddings
 
-    def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+	def chunks(lst, n):
+		"""Yield successive n-sized chunks from lst."""
+		for i in range(0, len(lst), n):
+        		yield lst[i:i + n]
 
 	def retry(fun, max_tries=5):
   		backoff = 1
