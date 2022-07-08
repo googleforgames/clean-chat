@@ -9,3 +9,8 @@ config
 terraform.tfstate
 terraform.tfstate.backup
 
+# Python cache dir
+__pycache__
+
+# tfx output
+*.tar.gz

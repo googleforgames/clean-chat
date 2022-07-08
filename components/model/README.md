@@ -39,9 +39,9 @@ Your pipeline endpoint (the address of your pipeline is now contained in the env
 Before you build your pipeline, set the enviroment variables for the number of training steps, evaluation steps, adn the path to the model's training data. 
 
 ```
-export TRAINING_DATA_PATH='path here'
-export TRAINING_STEPS='training steps'
-export EVAL_STEPS='eval steps'
+export TRAINING_DATA_PATH='training data dir path here'
+export TRAINING_STEPS='the number of training steps'
+export EVAL_STEPS='the number of eval steps'
 ```
 
 To build your TFX pipeline on the Kubeflow cluster that you just created, run: 
@@ -80,5 +80,62 @@ If you need to update the model that is currently being served, you may do so wi
 make serve-latest-model
 ```
 
+### Vertex AI Pipelines
 
+[tfx](https://www.tensorflow.org/tfx/guide/cli#create) supports [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs) option (`tfx pipeline create --engine=vertex`).   
+This section helps you to deploy your BERT pipeline to Vertex AI. 
 
+Before you start, you need to set up local Python environment. For Vertex AI compatibility, we use Python `3.7.12` or `3.7.13`. 
+
+In addition, these commands build the image with [Docker](https://www.docker.com/). Install Docker if needed. 
+
+After you set up the Python environment, install modules.
+
+```sh
+pip install -r ./components/model/bert/vertex_pipeline/requirements.txt
+```
+
+You have to enable Vertex AI service, Container Registry and Cloud Storage. Make sure you have the **OWNER** permission of your GCP Project to avoid IAM problems. 
+
+```sh
+gcloud services enable \
+  aiplatform.googleapis.com \
+  containerregistry.googleapis.com \
+  storage.googleapis.com
+```
+
+After enabling the service, you need to set up values Vertex AI Pipelines.
+
+```sh
+cd ~/clean-chat # or appropriate root path you cloned this repository.
+source config
+source ./components/model/bert/vertex_pipeline/env.sh
+make vertex-upload-data
+make vertex-create-pipeline
+```
+
+[`vertex-upload-data`](../../Makefile) uploads sample data to Google Cloud Storage. If you changed it, you need to upload again.
+
+[`vertex-create-pipeline`](../../Makefile) creates pipeline in Vertex AI and build a docker image with [Dockerfile](../../Dockerfile).
+
+This image is used as the default image in the pipeline. 
+
+Then you can run the pipeline. [`vertex-run-pipeline`](../../Makefile) run the pipeline.
+
+```sh
+make vertex-run-pipeline
+```
+
+The command shows the URL for Vertex AI pipelines to monitor the run.
+
+If you modify files, you need to update the pipeline before your new run. 
+
+```sh
+make vertex-update-pipeline
+```
+
+Then run your pipeline again.
+
+```sh
+make vertex-run-pipeline
+```
