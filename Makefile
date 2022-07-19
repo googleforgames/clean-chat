@@ -43,6 +43,18 @@ help:
 	@echo "Destroy/Delete Backend API Service"
 	@echo "    make destroy-backend-api"
 	@echo ""
+	@echo "Create Vertex AI Pipeline with tfx"
+	@echo "    make vertex-create-pipeline"
+	@echo ""
+	@echo "Update Vertex AI Pipeline with tfx"
+	@echo "    make vertex-update-pipeline"
+	@echo ""
+	@echo "Run Vertex AI Pipeline with tfx"
+	@echo "    make vertex-run-pipeline"
+	@echo ""
+	@echo "Upload data for Vertex AI Pipeline"
+	@echo "    make vertex-upload-data"
+	@echo ""
 
 deploy-all: terraform-init terraform-apply deploy-scoring-engine deploy-backend-api
 
@@ -166,3 +178,25 @@ serve-latest-model:
 	@echo "Pushing Latest Model to Production"
 	# TODO: Update Parameters, Port, model name
 	docker run -p 8501:8501 -e MODEL_BASE_PATH=gs://$BUCKET_NAME -e MODEL_NAME=antidote_serving -t tensorflow/serving
+
+# tfx in Vertex AI 
+.PHONY: vertex-create-pipeline
+vertex-create-pipeline:
+	@echo "Create Vertex AI Pipeline"
+	tfx pipeline create --pipeline-path=./componens/model/bert/vertex_pipeline/vertex_dag_runner.py  --engine=vertex --build-image
+
+.PHONY: vertex-update-pipeline
+vertex-update-pipeline:
+	@echo "Create Vertex AI Pipeline"
+	tfx pipeline update --pipeline-path=./components/model/bert/vertex_pipeline/vertex_dag_runner.py  --engine=vertex --build-image
+
+.PHONY: vertex-run-pipeline
+vertex-run-pipeline:
+	@echo "Update Vertex AI Pipeline"
+	tfx run create --pipeline-name ${TF_VAR_ML_PIPELINE_NAME}  --engine=vertex --project=${TF_VAR_GCP_PROJECT_ID} --region=${TF_VAR_GCP_REGION}
+
+.PHONY: vertex-upload-data
+vertex-upload-data:
+	@echo "Upload Data for Vertex AI Pipeline"
+	gsutil cp ./components/model/sample_data/sample_data.csv ${ML_GCS_BUCKET}/tfx_pipeline_output/${TF_VAR_ML_PIPELINE_NAME}/training-data/sample_data.csv
+	gsutil cp ./components/model/bert/vertex_pipeline/model.py ${ML_GCS_BUCKET}/tfx_pipeline_output/${TF_VAR_ML_PIPELINE_NAME}/module-file/model.py

@@ -1,0 +1,6 @@
+docker==4.2.0
+kubernetes==10.0.1
+tfx[kfp]==1.8.0
+kfp-server-api==1.8.1
+tensorflow_model_analysis==0.39.0
+tf-models-official==2.8.0

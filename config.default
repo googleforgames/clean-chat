@@ -174,5 +174,11 @@ export TF_VAR_MARKETPLACE_TOOLS_IMAGE=gcr.io/cloud-marketplace-staging/marketpla
 export TF_VAR_CURRENT_DIR=$PWD
 
 ######################################################
+# Environment varirables for tfx pipeline on Vertex AI
+######################################################
+
+export ML_GCS_BUCKET=gs://${TF_VAR_GCP_PROJECT_ID}-clean-chat-bert
+
+######################################################
 # End of Config
 ######################################################
