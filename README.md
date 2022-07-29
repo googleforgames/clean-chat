@@ -182,7 +182,9 @@ Clean Chat comes pre-packaged with a framework to train, test, and deploy toxici
 ## Model Choices
 
 ### Cohere.AI 
-Cohere.ai is a Google Cloud Partner who provides a developer API to create high-quality word embeddings. Users may “fine tune” a base cohere embedding model to receive embeddings that are specific to a Game’s dataset. We then provide a base Keras feed-forward neural network model, similar to those provided in Google tutorials, for a user to adjust. The Cohere Embeddings are fed into the Keras model, and the model is trained. 
+Cohere.ai provides a developer API to create high-quality word embeddings and classification models. Users may “fine tune” a base cohere embedding model to receive embeddings that are specific to a Game’s dataset. Cohere then provides a toxicity classification model. 
+
+Cohere is a Google Cloud Partner and available through the GCP marketplace.
 
 To learn more about Cohere, see their [documentation](https://docs.cohere.ai/).
 
