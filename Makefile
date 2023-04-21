@@ -183,7 +183,7 @@ serve-latest-model:
 .PHONY: vertex-create-pipeline
 vertex-create-pipeline:
 	@echo "Create Vertex AI Pipeline"
-	tfx pipeline create --pipeline-path=./componens/model/bert/vertex_pipeline/vertex_dag_runner.py  --engine=vertex --build-image
+	tfx pipeline create --pipeline-path=./components/model/bert/vertex_pipeline/vertex_dag_runner.py  --engine=vertex --build-image
 
 .PHONY: vertex-update-pipeline
 vertex-update-pipeline:
