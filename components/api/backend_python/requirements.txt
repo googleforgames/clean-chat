@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-requests==2.26.0
+requests==2.31.0
 Flask==2.0.1
 gunicorn==20.1.0
 audioread==2.1.9
