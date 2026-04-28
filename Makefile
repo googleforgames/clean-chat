@@ -198,5 +198,5 @@ vertex-run-pipeline:
 .PHONY: vertex-upload-data
 vertex-upload-data:
 	@echo "Upload Data for Vertex AI Pipeline"
-	gsutil cp ./components/model/sample_data/sample_data.csv ${ML_GCS_BUCKET}/tfx_pipeline_output/${TF_VAR_ML_PIPELINE_NAME}/training-data/sample_data.csv
-	gsutil cp ./components/model/bert/vertex_pipeline/model.py ${ML_GCS_BUCKET}/tfx_pipeline_output/${TF_VAR_ML_PIPELINE_NAME}/module-file/model.py
+	gcloud storage cp ./components/model/sample_data/sample_data.csv ${ML_GCS_BUCKET}/tfx_pipeline_output/${TF_VAR_ML_PIPELINE_NAME}/training-data/sample_data.csv
+	gcloud storage cp ./components/model/bert/vertex_pipeline/model.py ${ML_GCS_BUCKET}/tfx_pipeline_output/${TF_VAR_ML_PIPELINE_NAME}/module-file/model.py
