@@ -1,5 +1,5 @@
 apache-beam==2.30.0
 apache-beam[gcp]
-httplib2==0.17.0
+httplib2==0.19.0
 textblob==0.15.3
 google-api-python-client==2.30.0
